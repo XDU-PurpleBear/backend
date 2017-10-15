@@ -11,7 +11,7 @@ def login(blockInfo):
     password = blockInfo['password']
     value = blockInfo['userKey']
     #
-    dbPassword = Z.getPWD(type)['password']
+    dbPassword = Z.getPWD(value)['password']
     if dbPassword == '':
         errorInfo = 'I can\'t find this user!'
         returnInfo['Status'] = 'Failure'
@@ -35,19 +35,23 @@ def login(blockInfo):
     return returnInfo
 
 def signup(blockInfo):
+    
     returnInfo = {'Status':''} 
     password = blockInfo['password']
     username = blockInfo['username']
     tel = blockInfo['tel']
-    dbUser = Z.getPWD(username)
+    dbUser = Z.getPWDByUsername(username)['password']
+    print dbUser
     if dbUser != '':
         returnInfo['Status'] = 'Failure'
         returnInfo['errorInfo'] = 'This username has been existed!'
+        print returnInfo['errorInfo']
     else:
-        dbTel = Z.getPWD(tel)
+        dbTel = Z.getPWDByTel(tel)['password']
         if dbTel != '':
             returnInfo['Status'] = 'Failure'
             returnInfo['errorInfo'] = 'This telphone-number has been registered!'
+            print returnInfo['errorInfo']
         else:
             #
             dbInfo = Z.addUser(tel, username, password)
