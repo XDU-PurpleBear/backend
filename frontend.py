@@ -1,50 +1,82 @@
-from flask import Flask,render_template,request,make_response
+import X
+
+from flask import Flask,render_template,request,make_response,jsonify
 app = Flask(__name__)
 
-@app.route('/api/v1/login',method=['GET','POST'])
+
+@app.route('/api/login',methods=['GET','POST'])
 
 def FrontLogin():
+    bodyinfo ={"type":""}
     if request.method == "POST":
-        username = request.headers.get('username')
+        userKey = request.headers.get('userKey')
         password = request.headers.get('password')
-        if :
-            rsp = make_response('success')
-            rsp.headers['token'] =
-            rsp.headers['token_date'] =
-            rsp.headers['usertype'] =
+        print userKey
+        blockInfo = {"userKey":userKey,"password":password}
+        fromX = X.login(blockInfo)
+        if fromX["Status"]== "Success":
+            bodyinfo["type"] = "succeed"
+            bodyinfo["data"] = {}
+            rsp = make_response(jsonify(bodyinfo))
+            rsp.headers['token'] = fromX["token"]
+            rsp.headers['tokenDate'] = fromX["tokenDate"]
+            rsp.headers['userType'] = fromX["userType"]
             return rsp
         else:
-            return "<h1>login Failure !</h1>"
+            bodyinfo["type"] = "failed"
+            bodyinfo["errorReason"] = fromX["errorInfo"]
     else:
-        return "<h1>login Failure !</h1>"
+        bodyinfo["type"] = "failed"
+        bodyinfo["errorReason"] = "POST failed!"
 
-@app.route('/api/v1/login',method=['GET','POST'])
+    return jsonify(bodyinfo)
+
+
+@app.route('/api/logout',methods=['GET','POST'])
 
 def FrontLogout():
+    bodyinfo ={"type":""}
     if request.method == "POST":
         token = request.headers.get('token')
-        #judge
-        if:
-            return "<h1>logout success !</h1>"
+        print token
+        blockInfo = {"token":token}
+        fromX = X.logout(blockInfo)
+        if fromX["Status"]== "Success":
+            bodyinfo["type"]="succeed"
+            bodyinfo["data"]={}
         else:
-            return "<h1>logout Failure !</h1>"
+            bodyinfo["type"] = "failed"
+            bodyinfo["errorReason"] = fromX["errorInfo"]
     else:
-        return "<h1>logout Failure !</h1>"
+        bodyinfo["type"] = "failed"
+        bodyinfo["errorReason"] = "POST failed!"
+
+    return jsonify(bodyinfo)
 
 
-@app.route('/api/v1/signup',method=['GET','POST'])
+@app.route('/api/signup',methods=['GET','POST'])
 def FrontSignup():
+    bodyinfo ={"type":""}
     if request.method == "POST":
-        username = request.headers.get('username')
+        username = request.headers.get('userName')
+        tel = request.headers.get('tel')
         password = request.headers.get('password')
-        if :
-            return "<h1>signup success !</h1>"
+        blockInfo ={"username":username,"tel":tel,"password":password}
+        fromX = X.signup(blockInfo)
+        if fromX["Status"]== "Success":
+            bodyinfo["type"]="succeed"
+            bodyinfo["data"]={}
         else:
-            return "<h1>signup Failure !</h1>"
+            bodyinfo["type"] = "failed"
+            bodyinfo["errorReason"] = fromX["errorInfo"]
     else:
-        return "<h1>signup Failure !</h1>"
+        bodyinfo["type"] = "failed"
+        bodyinfo["errorReason"] = "POST failed!"
 
-@app.route('/api/v1/usrinfoModified',method=['GET','POST'])
+    return jsonify(bodyinfo)
+'''
+@app.route('/api/usrinfoModified',methods=['GET','POST'])
+
 def FrontUsrInfoModified():
     if request.method == "POST":
         firstname = request.headers.get('firstname')
@@ -54,13 +86,47 @@ def FrontUsrInfoModified():
         balance = request.headers.get('balance')
         sex = request.headers.get('sex')
         telephone = request.headers.get('telephone_number')
-        right = request.headers.get('right')
         if :
             return "<h1>signup success !</h1>"
         else:
             return "<h1>signup Failure !</h1>"
     else:
         return "<h1>signup Failure !</h1>"
+'''
+
+@app.route('/api/book/query',methods=['GET','POST'])
+
+def FrontSearchBook():
+    bodyinfo ={"type":""}
+    if request.method == "GET":
+        bookname = request.args.get('bookname')
+        booktype = request.args.get('booktype')
+        ISBN = request.args.get('ISBN')
+        token = request.headers.get('token')
+        blockInfo ={"bookname":bookname,"booktype":booktype,"ISBN":ISBN,"toekn":token}
+        fromX = X.searchBook(blockInfo)
+        if fromX["Status"] == "Success":
+            bodyinfo["type"] = "succeed"
+            bodyinfo["data"] = fromX["booklist"]
+            if fromX["tokenDate"] != 0:
+                rsp = make_response(jsonify(bodyinfo))
+                rsp.headers['tokenDate'] = fromX["tokenDate"]
+                return rsp
+            else:
+                pass
+        else:
+            bodyinfo["type"] = "failed"
+            bodyinfo["errorReason"] = fromX["errorInfo"]
+    else:
+        bodyinfo["type"] = "failed"
+        bodyinfo["errorReason"] = "GET failed!"
+
+    return jsonify(bodyinfo)
+
+
+
+
+'''
 
 @app.route('/api/api-version',method=['GET','POST'])
 
@@ -85,6 +151,6 @@ def FrontGetApiVersion():
 #def FrontGetApiVersion():
     #
 
-
+'''
 if __name__ == '__main__':
     app.run(debug=True)
