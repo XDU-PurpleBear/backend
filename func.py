@@ -58,12 +58,10 @@ def logout(blockInfo):
     returnInfo = {'Status':''}
     userToken = blockInfo['token']
     #johnReturn = J.delToken(userToken)
-    J = {}
-    J.status = 'Success'
-    J.errorInfo = 'Wrong'
-    returnInfo['Status'] = J.status
-    if J.status != 'Success':
-        returnInfo['errorInfo'] = J.errorInfo
+    J = {'Status':'Succes','errorInfo':'Wrong'}
+    returnInfo['Status'] = J['Status']
+    if J['Status'] != 'Success':
+        returnInfo['errorInfo'] = J['errorInfo']
     return returnInfo
 
 def modifyUserInfo(blockInfo):
@@ -76,8 +74,7 @@ def searchBook(blockInfo):
     returnInfo = {}
     token = blockInfo['token']
     #
-    J = {}
-    J.tokenDate = 'testDate'
+    J = {'tokenDate':'testDate',}
     isISBN = False
     if blockInfo['bookname'] == None : 
         if blockInfo['booktype'] == None :
@@ -98,6 +95,6 @@ def searchBook(blockInfo):
         returnInfo['errorInfo'] = 'Do not have this book!'
     else:
         returnInfo['Status'] = 'Success'
-        returnInfo['tokenDate'] = J.tokenDate
+        returnInfo['tokenDate'] = J['tokenDate']
         returnInfo['booklist'] =booklist
     return returnInfo
