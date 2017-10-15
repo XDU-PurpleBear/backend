@@ -4,67 +4,66 @@ Created on 2017年10月10日
 
 @author: lenovo
 '''
-from X import zzj as Z
-from X import john as J
+import database as Z
 
 def login(blockInfo):
-    #返回值
-    returnInfo = {'status':''}
-    #解析
+    returnInfo = {'Status':''}
     password = blockInfo['password']
-    keys = blockInfo.keys()
-    keys.remove('password')
-    #print keys
-    type = keys.pop()
-    value = blockInfo[type]
-    #data form db
-    dbPassword = Z.queryUser(type)['password']
-    #judge
+    value = blockInfo['userKey']
+    #
+    dbPassword = Z.getPWD(type)['password']
     if dbPassword == '':
         errorInfo = 'I can\'t find this user!'
-        returnInfo['status'] = 'Failed'
+        returnInfo['Status'] = 'Failure'
         returnInfo['errorInfo'] = errorInfo
     else:
         if dbPassword != password:
             errorInfo = 'Wrong password!'
-            returnInfo['status'] = 'Failure'
+            returnInfo['Status'] = 'Failure'
             returnInfo['errorInfo'] = errorInfo
         else:
-            UUID = Z.getUserUUID(value)['UUID']
-            returnInfo.update(J.getToken(UUID))
-            right = Z.getUserInfo(UUID)['right']
+            right = Z.getUserInfo(value)['right']
+            returnInfo['token'] = 'testToken'
+            returnInfo['tokenDate'] = 1231
             if right == '1':
-                returnInfo['usertype'] = 'reader'
+                returnInfo['usertype'] = 'customer'
             elif right == '2':
-                returnInfo['usertype'] = 'librarian'
+                returnInfo['usertype'] = 'admin'
             else :
                 print 'others command'
-            returnInfo['status'] = 'Success'
+            returnInfo['Status'] = 'Success'
     return returnInfo
 
 def signup(blockInfo):
-    returnInfo = {'status':''}
+    returnInfo = {'Status':''} 
     password = blockInfo['password']
-    keys = blockInfo.keys()
-    keys.remove('password')
-    #print keys
-    type = keys.pop()
-    value = blockInfo[type]
-    dbPassword = Z.queryUser(type)['password']
-    if dbPassword != '':
-        errorInfo = 'This user has existed!'
-        returnInfo['status'] = 'Failure'
-        returnInfo['errorInfo'] = errorInfo
+    username = blockInfo['username']
+    tel = blockInfo['tel']
+    dbUser = Z.getPWD(username)
+    if dbUser != '':
+        returnInfo['Status'] = 'Failure'
+        returnInfo['errorInfo'] = 'This username has been existed!'
     else:
-        dbInfo = Z.addUser(value, password)
-        returnInfo.update(dbInfo)
+        dbTel = Z.getPWD(tel)
+        if dbTel != '':
+            returnInfo['Status'] = 'Failure'
+            returnInfo['errorInfo'] = 'This telphone-number has been registered!'
+        else:
+            #
+            dbInfo = Z.addUser(tel, username, password)
+            returnInfo.update(dbInfo)
     return returnInfo
 
 def logout(blockInfo):
-    returnInfo = {'status':''}
+    returnInfo = {'Status':''}
     userToken = blockInfo['token']
-    johnReturn = J.delToken(userToken)
-    returnInfo.update(johnReturn)
+    #johnReturn = J.delToken(userToken)
+    J = {}
+    J.status = 'Success'
+    J.errorInfo = 'Wrong'
+    returnInfo['Status'] = J.status
+    if J.status != 'Success':
+        returnInfo['errorInfo'] = J.errorInfo
     return returnInfo
 
 def modifyUserInfo(blockInfo):
@@ -75,15 +74,30 @@ def modifyUserInfo(blockInfo):
     
 def searchBook(blockInfo):
     returnInfo = {}
-    clc = blockInfo['CLC']
-    bookname = blockInfo['BookName']
-    books = Z.queryBookKind(clc)
-    if books.len() == 0:
-        books = Z.queryBookKind(bookname)
-    bookList = []
-    for isbn in books:
-        book = Z.queryBook(isbn)
-        bookList.append(book)
-    returnInfo['status'] = 'Success'
-    returnInfo['booklist'] = bookList
+    token = blockInfo['token']
+    #
+    J = {}
+    J.tokenDate = 'testDate'
+    isISBN = False
+    if blockInfo['bookname'] == None : 
+        if blockInfo['booktype'] == None :
+            queryInfo = blockInfo['ISBN']
+            isISBN = True
+        else :
+            queryInfo = blockInfo['booktype']
+    else:
+        queryInfo = blockInfo['bookname']
+
+    if isISBN:
+        booklist = Z.queryBook(queryInfo)
+    else:
+        booklist = Z.queryBookKind(queryInfo)
+    
+    if len(booklist) < 1:
+        returnInfo['Status'] = 'Failure'
+        returnInfo['errorInfo'] = 'Do not have this book!'
+    else:
+        returnInfo['Status'] = 'Success'
+        returnInfo['tokenDate'] = J.tokenDate
+        returnInfo['booklist'] =booklist
     return returnInfo
