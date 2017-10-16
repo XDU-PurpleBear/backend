@@ -5,8 +5,6 @@ Created on 2017年10月16日
 @author: lenovo
 '''
 import func as X
-global onlineUser
-onlineUser = []
 
         
 def testSignup():
@@ -23,16 +21,23 @@ def testLogin():
         print 'block->',blockInfo
         fromX = X.login(blockInfo)
         print fromX
-        
-        if fromX['Status'] == 'Success':
-            name = X.Z.getUserInfo(blockInfo['userKey'])['user_name']
-            if name not in onlineUser:
-                onlineUser.append(name)
-            print onlineUser
         print '-------------------------------------------------'
+
+def testLogout():
+    print 'ss'
+    
 
 if __name__ == '__main__':
     
     X.Z.initUsers()
+
     testLogin()
     #testSignup()
+    '''    loginBlock = {'userKey':'17818102925','password':'laozitianxiadiyi!'}
+    fromX = X.login(loginBlock)
+    if fromX['Status'] == 'Success':
+        name = X.Z.getUserInfo(loginBlock['userKey'])['user_name']
+        if name not in onlineUser:
+            onlineUser.append(name)
+    print o
+    '''

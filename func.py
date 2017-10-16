@@ -4,7 +4,8 @@ Created on 2017年10月10日
 
 @author: lenovo
 '''
-import database as Z
+import databaseFaker as Z
+import John as J
 
 def login(blockInfo):
     returnInfo = {'Status':''}
@@ -22,9 +23,11 @@ def login(blockInfo):
             returnInfo['Status'] = 'Failure'
             returnInfo['errorInfo'] = errorInfo
         else:
+            username = Z.getUserInfo(value)['user_name']
+            retJohn = J.getToken(username)
             right = Z.getUserInfo(value)['right']
-            returnInfo['token'] = 'testToken'
-            returnInfo['tokenDate'] = 1231
+            returnInfo['token'] = retJohn['token']
+            returnInfo['tokenDate'] = retJohn['nextExipre']
             if right == '1':
                 returnInfo['usertype'] = 'customer'
             elif right == '2':
@@ -62,10 +65,11 @@ def logout(blockInfo):
     returnInfo = {'Status':''}
     userToken = blockInfo['token']
     #johnReturn = J.delToken(userToken)
-    J = {'Status':'Succes','errorInfo':'Wrong'}
-    returnInfo['Status'] = J['Status']
-    if J['Status'] != 'Success':
-        returnInfo['errorInfo'] = J['errorInfo']
+    username = blockInfo['username']
+    retJohn = J.deleteToken(username)
+    returnInfo['Status'] = retJohn['status']
+    if returnInfo['Status'] != 'Success':
+        returnInfo['errorInfo'] = retJohn['msg']
     return returnInfo
 
 def modifyUserInfo(blockInfo):
