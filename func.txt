@@ -1,0 +1,66 @@
+# -*- coding:utf-8 -*-
+def login(info):
+'''
+#根据key-value向数据库匹配，获取uuid和right，提交至John获取token，tokenDate
+#构建返回值，插入tokenDate，token
+'''
+def logout(info):
+'''
+#提取token，核实token，获取返回信息
+#构建返回值
+'''
+def signup(info):
+'''
+#获取注册信息，新建用户
+#提取uuid，right，提交至John，获取token，tokenDate
+#构建返回值，插入tokenDate，token
+'''
+def searchBook(info):
+'''
+#提取token，核实token，获取token信息
+#向数据库传递type，value，获取返回信息
+#根据返回信息中的isbn再次查询数据库，获取uuid数组以及图片
+#构建返回值，插入tokenDate（如果有）
+'''
+def addBook(info):
+'''
+#提取token，核实token，获取token信息
+#抽取book['counts']，向数据库发送加书信息（kind和instance）
+#构建返回值，插入tokenDate
+'''
+def modifyBook(info):
+'''
+#提取token，核实token，获取token信息
+#获取kind信息，获取对书的操作信息'books'
+#根据isbn修改kind，根据books加减实体书
+#构建返回值，插入tokenDate
+'''
+def searchUserOrder(info):
+'''
+#提取token，核实token，获取token信息，获取uuid
+#向数据库传送uuid，status，获取返回值
+#提取返回值中的opt[]，查询instance_uuid，进而查询isbn，进而获取bookinfo
+#构建返回值，插入tokenDate
+'''
+def searchAllOrder(info):
+'''
+#提取token，核实token，获取token信息
+#根据status查询order->opt->instance->kind
+#构建返回值，插入tokenDate
+'''
+def userBorrow(info):
+'''
+#提取token，核实token，获取token信息
+#根据books新建order->instance->opt，更改status（opt和instance）
+#构建返回值，插入tokenDate
+'''
+def userReturn(info):
+'''
+#提取token，核实token，获取token信息
+#根据books获取instance->opt->order，更改status（opt和instanceorder）
+#构建返回值，插入tokenDate
+'''
+def applyForPicture(info):
+'''
+#根据isbn获取图片，转码后发送给前端
+'''
