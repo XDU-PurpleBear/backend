@@ -4,105 +4,328 @@ Created on 2017年10月10日
 
 @author: lenovo
 '''
-import databaseFaker as Z
+from database import Database as Z
 import John as J
+import datetime
 
-def login(blockInfo):
-    returnInfo = {'Status':''}
-    password = blockInfo['password']
-    value = blockInfo['userKey']
-    #
-    dbPassword = Z.getPWD(value)['password']
-    if dbPassword == '':
-        errorInfo = 'I can\'t find this user!'
-        returnInfo['Status'] = 'Failure'
-        returnInfo['errorInfo'] = errorInfo
+def login(info):
+    retInfo = {}
+    fordb = {'type':info['type'],'value':info['value']}
+    retdb = Z.getUserUUID(fordb)
+    if retdb['status'] != 'success':
+        retInfo = retdb
     else:
-        if dbPassword != password:
-            errorInfo = 'Wrong password!'
-            returnInfo['Status'] = 'Failure'
-            returnInfo['errorInfo'] = errorInfo
+        userid = retdb['uuid']
+        pwddb = Z.getUserPWD(userid)['password']
+        password = info['password']
+        if pwddb != password:
+            retInfo['status'] = 'failure'
+            retInfo['errorInfo'] = 'Wrong password!'
         else:
-            username = Z.getUserInfo(value)['user_name']
-            retJohn = J.getToken(username)
-            right = Z.getUserInfo(value)['right']
-            returnInfo['token'] = retJohn['token']
-            returnInfo['tokenDate'] = retJohn['nextExipre']
-            if right == '1':
-                returnInfo['usertype'] = 'customer'
-            elif right == '2':
-                returnInfo['usertype'] = 'admin'
-            else :
-                print 'others command'
-            returnInfo['Status'] = 'Success'
-    return returnInfo
+            right = Z.getUserInfo(userid)['data']['right']
+            forjohn = {'uuid':userid,'right':right}
+            retjohn = J.addToJohn(forjohn)
+            if retjohn['status'] != 'success':
+                retInfo = retjohn
+            else:
+                retInfo = retjohn
+                retInfo['right'] = right
+    return retInfo
 
-def signup(blockInfo):
-    
-    returnInfo = {'Status':''} 
-    password = blockInfo['password']
-    username = blockInfo['username']
-    tel = blockInfo['tel']
-    dbUser = Z.getPWDByUsername(username)['password']
-    print dbUser
-    if dbUser != '':
-        returnInfo['Status'] = 'Failure'
-        returnInfo['errorInfo'] = 'This username has been existed!'
-        print returnInfo['errorInfo']
+def signup(info):
+    retInfo = {}
+    fordb = {'type':'tel','value':info['tel']}
+    telid = Z.getUserUUID(fordb)
+    if telid['status'] == 'success':
+        retInfo['status'] = 'failure'
+        retInfo['errorInfo'] = 'This tel has been registered!'
     else:
-        dbTel = Z.getPWDByTel(tel)['password']
-        if dbTel != '':
-            returnInfo['Status'] = 'Failure'
-            returnInfo['errorInfo'] = 'This telphone-number has been registered!'
-            print returnInfo['errorInfo']
+        fordb = {'type':'username','value':info['username']}
+        nameid = Z.getUserUUID(fordb)
+        if nameid['status'] == 'success':
+            retInfo['status'] = 'failure'
+            retInfo['errorInfo'] = 'This username has been registered!'
         else:
-            #
-            dbInfo = Z.addUser(tel, username, password)
-            returnInfo.update(dbInfo)
-    return returnInfo
+            fordb = {'password':info['password'],'tel':info['tel'],'username':info['username']}
+            retdb = Z.addUser(fordb)
+            retInfo = retdb
+    return retInfo
 
-def logout(blockInfo):
-    returnInfo = {'Status':''}
-    userToken = blockInfo['token']
-    #johnReturn = J.delToken(userToken)
-    username = blockInfo['username']
-    retJohn = J.deleteToken(username)
-    returnInfo['Status'] = retJohn['status']
-    if returnInfo['Status'] != 'Success':
-        returnInfo['errorInfo'] = retJohn['msg']
-    return returnInfo
+def logout(info):
+    retInfo = {}
+    forjohn = {'token':info['token']}
+    retjohn = J.deleteOnJohn(forjohn)
+    retInfo = retjohn
+    return retInfo
 
-def modifyUserInfo(blockInfo):
-    returnInfo = {}
-    dbInfo = Z.modifyUserInfo(blockInfo)
-    returnInfo.update(dbInfo)
-    return returnInfo
+def searchUserInfo(info):
+    retInfo = {}
+    forjohn = {'token':info['token']}
+    retjohn = J.searchOnJohn(forjohn)
+    if retjohn['status'] != 'success':
+        retInfo = retjohn
+    else:
+        retInfo['tokenDate'] = retjohn['tokenDate']
+        retdb = Z.getUserInfo(retjohn['uuid'])
+        if retdb['status'] != 'success':
+            retInfo = retdb
+        else:
+            retInfo = retdb
+            retInfo['data'].pop('right')
+            retInfo['data'].pop('balance')
+    return retInfo
+
+def modifyUserInfo(info):
+    retInfo = {}
+    forjohn = {'token':info['token']}
+    retjohn = J.searchOnJohn(forjohn)
+    if retjohn['status'] != 'success':
+        retInfo = retjohn
+    else:
+        fordb = info['data']
+        retdb = Z.modifyUserInfo(fordb)
+        retInfo = retdb
+        retInfo['tokenDate'] = retjohn['tokenDate']
+    return retInfo
+
+def modifyUserPassword(info):
+    return Z.modifyUserPWD(info)
+
+def modifyUserBalance(info):
+    return Z.modifyUserBalance(info)
+
+def modifyUserRight(info):
+    return Z.modifyUserRight(info)
     
-def searchBook(blockInfo):
-    returnInfo = {}
-    token = blockInfo['token']
-    #
-    J = {'tokenDate':'testDate',}
-    isISBN = False
-    if blockInfo['bookname'] == None : 
-        if blockInfo['booktype'] == None :
-            queryInfo = blockInfo['ISBN']
-            isISBN = True
-        else :
-            queryInfo = blockInfo['booktype']
-    else:
-        queryInfo = blockInfo['bookname']
-
-    if isISBN:
-        booklist = Z.queryBook(queryInfo)
-    else:
-        booklist = Z.queryBookKind(queryInfo)
+def searchBook(info):
+    retInfo = {}
+    if info.has_key('token'):
+        forjohn = {'token':info['token']}
+        retjohn = J.searchOnJohn(forjohn)
+        if retjohn['status'] != 'success':
+            retInfo = retjohn
+            return retInfo
+        else:
+            retInfo['tokenDate'] = retjohn['tokenDate']
     
-    if len(booklist) < 1:
-        returnInfo['Status'] = 'Failure'
-        returnInfo['errorInfo'] = 'Do not have this book!'
+    fordb = {'type':info['type'],'value':info['value']}
+    retdb = Z.searchISBN(fordb)
+    if retdb['status'] != 'success':
+        retInfo = retdb
     else:
-        returnInfo['Status'] = 'Success'
-        returnInfo['tokenDate'] = J['tokenDate']
-        returnInfo['booklist'] =booklist
-    return returnInfo
+        isbn = retdb['isbn']
+        booklist = []
+        for i in isbn:
+            dbkind = Z.searchBookInfo(i)
+            if dbkind['status'] != 'success':
+                return dbkind
+            info = dbkind['data']
+            info['isbn'] = i
+            dbinstance = Z.searchBookInstance(isbn=i, status='a---')
+            if dbinstance['status'] != 'success':
+                return dbinstance
+            uuids = []
+            for uid in dbinstance['uuid']:
+                uuids.append(uid.keys()[0])
+            book = {'uuid':uuids,'info':info}
+            booklist.append(book)
+        retInfo['data'] = booklist
+    return retInfo
+
+def addBook(info):
+    retInfo = {}
+    forjohn = {'token':info['token']}
+    retjohn = J.searchOnJohn(forjohn)
+    if retjohn['status'] != 'success':
+        retInfo = retjohn
+    else:
+        retInfo['tokenDate'] = retjohn['tokenDate']
+        bookinfo = info['book']
+        counts = bookinfo.pop('counts')
+        dbkind = Z.addBookInfo(bookinfo)
+        if dbkind['status'] != 'success':
+            return dbkind
+        if type(counts) == 'str':
+            counts = int(counts)
+        for i in range(counts):
+            dbinstance = Z.addBookInstance(bookinfo['isbn'])
+            if dbinstance['status'] != 'success':
+                return dbinstance
+            retInfo = dbinstance
+    return retInfo
+
+def modifyBookInfo(info):
+    retInfo = {}
+    forjohn = {'token':info['token']}
+    retjohn = J.searchOnJohn(forjohn)
+    if retjohn['status'] != 'success':
+        retInfo = retjohn
+    else:
+        retInfo['tokenDate'] = retjohn['tokenDate']
+        bookkind = info['book']
+        dbkind = Z.modifyBookInfo(bookkind)
+        if dbkind['status'] != 'success':
+            return dbkind
+        oper = info['books']
+        if oper.has_key('add'):
+            counts = int(oper['add'])
+            for i in range(counts):
+                dbinstance = Z.addBookInstance(bookkind['isbn'])
+                if dbinstance['status'] != 'success':
+                    return dbinstance
+        elif oper.has_key('delete'):
+            uuids = oper['delete']
+            for i in uuids:
+                dbinstance = Z.modifyBookInstance({'uuid':i,'status':'-u--'})
+                if dbinstance['status'] != 'success':
+                    return dbinstance
+        retInfo['status'] = 'success'
+    return retInfo
+
+def searchUserOrder(info):
+    retInfo = {}
+    forjohn = {'token':info['token']}
+    retjohn = J.searchOnJohn(forjohn)
+    if retjohn['status'] != 'success':
+        retInfo = retjohn
+    else:
+        retInfo['tokenDate'] = retjohn['tokenDate']
+        userid = retjohn['uuid']
+        dborder = Z.searchOrder(status=info['status'],uuid=userid)
+        if dborder['status'] != 'success':
+            return dborder
+        orderlist = []
+        orders = dborder['uuid']
+        for uid in orders:
+            orderid = uid.keys()[0]
+            orderinfo = {'orderid':orderid,'timestamp':uid[orderid]['timestamp']}
+            optids = uid[orderid]['opt']
+            books = []
+            for optid in optids:
+                dbinstance = Z.searchBookInstance(status=info['status'],optid=optid)
+                if dbinstance['status'] != 'success':
+                    return dbinstance
+                instanceids = dbinstance['uuid']
+                bookuuid = []
+                for inid in instanceids:
+                    id = inid.keys()[0]
+                    dbopera = Z.searchOperation(id)
+                    if dbopera['status'] != 'success':
+                        return dbopera
+                    returnDate = dbopera['returnDate']
+                    bookuuid.append({'uuid':id,'returnDate':returnDate})
+                isbn = dbinstance['isbn']
+                dbkind = Z.searchBookInfo(isbn)
+                if dbkind['status'] != 'success':
+                    return dbkind
+                bookinfo = dbkind['data']
+                books.append({'uuid':bookuuid,'info':bookinfo})
+            orderinfo['books'] = books
+            orderlist.append(orderinfo)
+        retInfo['status'] = 'success'
+        retInfo['data'] = orderlist
+    return retInfo
+
+def searchAllUserOrder(info):
+    retInfo = {}
+    forjohn = {'token':info['token']}
+    retjohn = J.searchOnJohn(forjohn)
+    if retjohn['status'] != 'success':
+        retInfo = retjohn
+    else:
+        retInfo['tokenDate'] = retjohn['tokenDate']
+        dborder = Z.searchOrder(status=info['status'])
+        if dborder['status'] != 'success':
+            return dborder
+        orderlist = []
+        orders = dborder['uuid']
+        for uid in orders:
+            orderid = uid.keys()[0]
+            userid = uid[orderid]['userUUID']
+            dbuser = Z.getUserInfo(userid)
+            if dbuser['status'] != 'success':
+                return dbuser
+            orderinfo = {'orderid':orderid,'timestamp':uid[orderid]['timestamp'],'user':dbuser['data']['username']}
+            optids = uid[orderid]['opt']
+            books = []
+            for optid in optids:
+                dbinstance = Z.searchBookInstance(status=info['status'],optid=optid)
+                if dbinstance['status'] != 'success':
+                    return dbinstance
+                instanceids = dbinstance['uuid']
+                bookuuid = []
+                for inid in instanceids:
+                    id = inid.keys()[0]
+                    dbopera = Z.searchOperation(id)
+                    if dbopera['status'] != 'success':
+                        return dbopera
+                    returnDate = dbopera['returnDate']
+                    bookuuid.append({'uuid':id,'returnDate':returnDate})
+                isbn = dbinstance['isbn']
+                dbkind = Z.searchBookInfo(isbn)
+                if dbkind['status'] != 'success':
+                    return dbkind
+                bookinfo = dbkind['data']
+                books.append({'uuid':bookuuid,'info':bookinfo})
+            orderinfo['books'] = books
+            orderlist.append(orderinfo)
+        retInfo['status'] = 'success'
+        retInfo['data'] = orderlist
+    return retInfo
+
+def borrow(info):
+    retInfo = {}
+    forjohn = {'token':info['token']}
+    retjohn = J.searchOnJohn(forjohn)
+    if retjohn['status'] != 'success':
+        retInfo = retjohn
+    else:
+        retInfo['tokenDate'] = retjohn['tokenDate']
+        userid = retjohn['uuid']
+        books = info['books']
+        optids = []
+        for i in books:
+            currentTime = str(datetime.datetime.now() + datetime.timedelta(45))
+            date = [currentTime]
+            dboper = Z.addOperation({'returnDate':date,'status':'--b-'})
+            if dboper['status'] != 'success':
+                return dboper
+            optid = dboper['uuid']
+            dbinstance = Z.modifyBookInstance({'uuid':i,'optid':optid})
+            if dbinstance['status'] != 'success':
+                return dbinstance
+            dbinstance = Z.modifyBookInstance({'uuid':i,'status':'--b-'})
+            if dbinstance['status'] != 'success':
+                return dbinstance
+            optids.append(optid)
+        dborder = Z.addOrder({'userUUID':userid,'optid':optids,'status':'applying'})
+        if dborder['status'] != 'success':
+            return dborder
+    return retInfo
+
+def returnBook(info):
+    retInfo = {}
+    forjohn = {'token':info['token']}
+    retjohn = J.searchOnJohn(forjohn)
+    if retjohn['status'] != 'success':
+        retInfo = retjohn
+    else:
+        retInfo['tokenDate'] = retjohn['tokenDate']
+        userid = retjohn['uuid']
+        books = info['books']
+        for i in books:
+            
+            dbinstance = Z.searchBookInstance(status='--b-',uuid=i)
+            if dbinstance['status'] != 'success':
+                return dbinstance
+            optid = dbinstance['uuid'][0][i]
+            dbinstance = Z.modifyBookInstance({'uuid':i,'status':'a---'})
+            if dbinstance['status'] != 'success':
+                return dbinstance
+            dbinstance = Z.modifyBookInstance({'uuid':i,'optid':None})
+            if dbinstance['status'] != 'success':
+                return dbinstance
+            dboper = Z.modifyOperationStatus({'uuid':optid,'status':'a---'})
+            if dboper['status'] != 'success':
+                return dboper
+    return retInfo   
