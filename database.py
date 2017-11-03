@@ -13,7 +13,6 @@ import psycopg2
 import re
 import uuid
 
-
 class Database(object):
 
     @classmethod
@@ -29,13 +28,22 @@ class Database(object):
     def setConn(cls, _host, _port, _database, _user, _password):
         cls.__conn = psycopg2.connect(host=_host, port=_port, database=_database, user=_user, password=_password)
         cls.__cur = cls.__conn.cursor()
+        # sql = 'INSERT INTO table_account (key_uuid, key_tel, key_user_name, key_password, key_register_date, key_right) ' \
+        #       'VALUES (\'' + str(uuid.uuid1()) + '\', \'13772227777\',\'root\', \'root\', \'' + str(datetime.datetime.now()) + '\', 2);'
+        # try:
+        #     cls.__cur.execute(sql)
+        # except Exception, e:
+        #     print 'exist!'
+        # finally:
+        #     cls.__conn.commit()
+        # print 'success!'
 
     @classmethod
     def addUser(cls, info):
         currentTime = str(datetime.datetime.now())
-        sql = 'INSERT INTO table_account (key_uuid, key_tel, key_user_name, key_password, key_register_date, key_right) ' \
+        sql = 'INSERT INTO table_account (key_uuid, key_tel, key_user_name, key_password, key_register_date, key_right, key_balance, key_pledge, key_stu_id) ' \
               'VALUES (\'' + str(uuid.uuid1()) + '\', \'' + info['tel'] + '\',\'' + info['username'] + '\', \'' \
-              + info['password'] + '\', \'' + currentTime + '\', 1);'
+              + info['password'] + '\', \'' + currentTime + '\', 1, ' + str(info['balance']) + ', ' + str(info['pledge']) + ', ' + str(info['stu_id']) + ');'
         try:
             cls.__cur.execute(sql)
         except Exception, e:
@@ -45,15 +53,8 @@ class Database(object):
         return {'status': 'success'}
 
     @classmethod
-    def modifyUserInfo(cls, info):
-        sql = 'UPDATE table_account SET ' \
-              'key_user_name = \'' + info['username'] + '\', ' \
-              'key_first_name = \'' + info['firstname'] + '\', ' \
-              'key_last_name = \'' + info['lastname'] + '\', ' \
-              'key_birthday = \'' + info['birthday'] + '\', ' \
-              'key_sex = ' + info['sex'] + ', ' \
-              'key_tel = ' + info['tel'] + ' WHERE key_uuid = \'' + info['uuid']+ '\';'
-        sql = re.sub('\'None\' | None', 'null', sql)
+    def deleteUser(cls, uuid):
+        sql = 'DELETE FROM table_account WHERE key_uuid = \'' + uuid + '\';'
         try:
             cls.__cur.execute(sql)
         except Exception, e:
@@ -61,6 +62,10 @@ class Database(object):
         finally:
             cls.__conn.commit()
         return {'status': 'success'}
+
+    @classmethod
+    def modifyLogo(cls, info):
+        pass
 
     @classmethod
     def modifyUserPWD(cls, info):
@@ -103,14 +108,14 @@ class Database(object):
     def getUserUUID(cls, info):
         if info['type'] == 'tel':
             sql = 'SELECT key_uuid FROM table_account WHERE key_tel = ' + info['value'] + ';'
-        elif info['type'] == 'username':
-            sql = 'SELECT key_uuid FROM table_account WHERE key_user_name = \'' + info['value'] + '\';'
+        elif info['type'] == 'stuid':
+            sql = 'SELECT key_uuid FROM table_account WHERE key_stu_id = \'' + info['value'] + '\';'
         cls.__cur.execute(sql)
         rows = cls.__cur.fetchall()
         if rows:
-           return {'status': 'success', 'uuid': rows[0][0]}
+            return {'status': 'success', 'uuid': rows[0][0]}
         else:
-           return {'status': 'failure', 'errorInfo': 'uuid not exist!'}
+            return {'status': 'failure', 'errorInfo': 'uuid not exist!'}
 
     @classmethod
     def getUserPWD(cls, uuid):
@@ -122,92 +127,24 @@ class Database(object):
         else:
             return {'status':'failure', 'errorInfo': 'this uuid not exist!'}
 
-
     @classmethod
     def getUserInfo(cls, uuid):
-        sql = 'SELECT key_user_name, key_first_name, key_last_name, key_birthday, key_balance, key_sex, key_tel, key_right FROM table_account WHERE key_uuid = \'' + uuid + '\';'
+        sql = 'SELECT key_user_name, key_stu_id, key_tel, key_logo, key_balance, key_right, key_pledge FROM table_account WHERE key_uuid = \'' + uuid + '\';'
         cls.__cur.execute(sql)
         rows = cls.__cur.fetchall()
         if (rows):
             data = {}
             data['username'] = rows[0][0]
-            data['firstname'] = rows[0][1]
-            data['lastname'] = rows[0][2]
-            data['birthday'] = str(rows[0][3])
+            data['stuid'] = rows[0][1]
+            data['tel'] = rows[0][2]
+            data['logo'] = str(rows[0][3])
             data['balance'] = str(rows[0][4])
-            data['sex'] = rows[0][5]
-            data['tel'] = str(rows[0][6])
-            data['right'] = rows[0][7]
+            data['right'] = rows[0][5]
+            data['pledge'] = str(rows[0][6])
+            data['uuid'] = uuid
             return {'status': 'success', 'data': data}
         else:
             return {'status': 'failure', 'errorInfo': 'this uuid not exist!'}
-
-    @classmethod
-    def searchISBN(cls, info):
-        sql = 'SELECT key_isbn FROM table_book_kind '
-        if info['type'] == 'clc':
-            sql += 'WHERE key_clc = \'' + info['value'] + '\';'
-        elif info['type'] == 'name':
-            sql += 'WHERE lower(key_name) like \'%' + info['value'].lower() + ' %\';'
-        elif info['type'] == 'auth':
-            auth = info['value']
-            s = ''
-            for l in auth:
-                s += '.*' + l
-            s += '.*'
-            t_sql = 'SELECT key_isbn, key_auth FROM table_book_kind'
-            cls.__cur.execute(t_sql)
-            rows = cls.__cur.fetchall()
-            if (rows):
-                isbn = []
-                for row in rows:
-                    if re.compile(s).match(str(row[1])):
-                        isbn.append(row[0])
-                return {'status': 'success', 'isbn': isbn}
-            else:
-                return {'status': 'failure', 'errorInfo': 'this kind book not exist!'}
-        elif info['type'] == 'publisher':
-            sql += 'WHERE lower(key_publisher) like \'%' + info['value'].lower() + '%\';'
-        cls.__cur.execute(sql)
-        rows = cls.__cur.fetchall()
-        if (rows):
-            isbn = []
-            for row in rows:
-                isbn.append(row[0])
-            return {'status': 'success', 'isbn': isbn}
-        else:
-            return {'status': 'failure', 'errorInfo': 'this kind book not exist!'}
-
-    @classmethod
-    def searchBookInfo(cls, isbn):
-        sql = 'SELECT key_isbn, key_clc, key_name, key_auth, key_publisher, key_edition, key_publish_date, key_tags, key_snapshot ' \
-              'FROM table_book_kind WHERE key_isbn = \'' + isbn + '\';'
-        cls.__cur.execute(sql)
-        rows = cls.__cur.fetchall()
-        if (rows):
-            data = {}
-            data['isbn'] = rows[0][0]
-            data['clc'] = rows[0][1]
-            data['name'] = rows[0][2]
-            data['auth'] = rows[0][3]
-            data['publisher'] = rows[0][4]
-            data['edition'] = rows[0][5]
-            data['publish_date'] = str(rows[0][6])
-            data['tags'] = rows[0][7]
-            data['snapshot'] = rows[0][8]
-            return {'status': 'success', 'data': data}
-        else:
-            return {'status': 'failure', 'errorInfo': 'this isbn not exist!'}
-
-    @classmethod
-    def searchPicture(cls, isbn):
-        sql = 'SELECT key_imgs FROM table_book_kind WHERE key_isbn = \'' + isbn + '\';'
-        cls.__cur.execute(sql)
-        rows = cls.__cur.fetchall()
-        if (rows):
-            return rows[0][0]
-        else:
-            return 'this isbn not exist!'
 
     @classmethod
     def addBookInfo(cls, info):
@@ -215,9 +152,11 @@ class Database(object):
         info['tags'] = re.sub('\[|\]|\'|\"', '', str(info['tags']))
         # print info['auth']
         # print info['tags']
-        sql = 'INSERT INTO table_book_kind (key_isbn, key_clc, key_name, key_auth, key_publisher, key_edition, key_publish_date, key_tags, key_snapshot) ' \
-              'VALUES (\'' + info['isbn'] + '\', \'' + info['clc'] + '\', \'' + info['name'] + '\', \'{' + str(info['auth']) + '}\', \'' + info['publisher'] \
-              + '\', ' + str(info['edition']) + ', \'' + str(info['publish_date']) + '\', \'{' + str(info['tags']) + '}\', \'' + info['snapshot'] + '\');'
+        sql = 'INSERT INTO table_book_kind (key_isbn, key_lc, key_name, key_auth, key_publisher, key_edition, key_imgs, key_tags, key_abstract) ' \
+              'VALUES (\'' + info['isbn'] + '\', \'' + info['lc'] + '\', \'' + info['name'] + '\', \'{' + str(
+            info['auth']) + '}\', \'' + info['publisher'] \
+              + '\', ' + str(info['edition']) + ', \'' + str(info['imgs']) + '\', \'{' + str(
+            info['tags']) + '}\', \'' + info['abstract'] + '\');'
         sql = re.sub('\'None\' | None', 'null', sql)
         try:
             cls.__cur.execute(sql)
@@ -228,9 +167,8 @@ class Database(object):
         return {'status': 'success'}
 
     @classmethod
-    def addBookPicture(cls, info):
-        sql = 'UPDATE table_book_kind SET ' \
-              'key_imgs = \'' + str(info['data']) + '\' WHERE key_isbn = \'' + info['isbn'] + '\';'
+    def deleteBookInfo(cls, isbn):
+        sql = 'DELETE FROM table_book_kind WHERE key_isbn = \'' + str(isbn) + '\';'
         try:
             cls.__cur.execute(sql)
         except Exception, e:
@@ -241,48 +179,69 @@ class Database(object):
 
     @classmethod
     def modifyBookInfo(cls, info):
-        info['auth'] = re.sub('\[|\]|\'|\"', '', str(info['auth']))
-        info['tags'] = re.sub('\[|\]|\'|\"', '', str(info['tags']))
-        sql = 'UPDATE table_book_kind SET key_clc = \'' + info['clc'] + '\', key_name = \'' + info['name'] + \
-              '\', key_auth = \'{' + str(info['auth']) + '}\', key_publisher = \'' + info['publisher'] + \
-              '\', key_edition = ' + str(info['edition']) + ', key_publish_date = \'' + str(info['publish_date']) + \
-              '\', key_tags = \'{' + str(info['tags']) + '}\', key_snapshot = \'' + info['snapshot'] + '\' WHERE key_isbn = \'' + info['isbn'] + '\';'
+        pass
 
-        sql = re.sub('\'None\' | None', 'null', sql)
-        try:
+    @classmethod
+    def searchISBN(cls, info):
+        if info['type'] == 'name':
+            sql = 'SELECT key_isbn FROM table_book_kind WHERE lower(key_name) like \'%' + info['value'].lower() + '%\';'
             cls.__cur.execute(sql)
-        except Exception, e:
-            return {'status': 'failure', 'errorInfo': str(e)}
-        finally:
-            cls.__conn.commit()
-        return {'status': 'success'}
+            rows = cls.__cur.fetchall()
+            if (rows):
+                isbn = []
+                for row in rows:
+                    isbn.append(row[0])
+                return {'status': 'success', 'isbn': isbn}
+            else:
+                return {'status': 'failure', 'errorInfo': 'this kind book not exist!'}
+        elif info['type'] == 'tags':
+            t_sql = 'SELECT key_isbn, key_tags FROM table_book_kind'
+            cls.__cur.execute(t_sql)
+            rows = cls.__cur.fetchall()
+            isbn = []
+            for row in rows:
+                if set(info['value']).issubset(row[1]):
+                    isbn.append(row[0])
+            if len(isbn) > 0:
+                return {'status': 'success', 'isbn': isbn}
+            else:
+                return {'status': 'failure', 'errorInfo': 'this kind book not exist!'}
+        elif info['type'] == 'auth':
+            auth = info['value']
+            t_sql = 'SELECT key_isbn, key_auth FROM table_book_kind'
+            cls.__cur.execute(t_sql)
+            rows = cls.__cur.fetchall()
+            isbn = []
+            for row in rows:
+                if set(info['value']).issubset(row[1]):
+                    isbn.append(row[0])
+            if len(isbn) > 0:
+                return {'status': 'success', 'isbn': isbn}
+            else:
+                return {'status': 'failure', 'errorInfo': 'this kind book not exist!'}
+        else:
+            return {'status': 'failure', 'errorInfo': 'this kind book not exist!'}
 
     @classmethod
-    def modifyBookPicture(cls, info):
-        cls.addBookPicture(info)
-
-    @classmethod
-    def searchBookInstance(cls, status, **kws):
-        sql = 'SELECT key_uuid, key_isbn, key_opt_id FROM table_book_instance WHERE key_status = \'' + status + '\' AND '
-        if kws.has_key('isbn'):
-            sql += 'key_isbn = \'' + kws['isbn'] + '\';'
-        elif kws.has_key('uuid'):
-            sql += 'key_uuid = \'' + kws['uuid'] + '\';'
-        elif kws.has_key('optid'):
-            sql += 'key_opt_id = \'' + kws['optid'] + '\';'
+    def searchBookInfo(cls, isbn):
+        sql = 'SELECT key_isbn, key_lc, key_name, key_auth, key_publisher, key_edition, key_imgs, key_tags, key_abstract ' \
+              'FROM table_book_kind WHERE key_isbn = \'' + isbn + '\';'
         cls.__cur.execute(sql)
         rows = cls.__cur.fetchall()
         if (rows):
-            uuid = {}
-            for row in rows:
-                row_uuid = row[0]
-                row_isbn = row[1]
-                row_opt_id = row[2]
-                uuid[row_uuid] = row_opt_id
-                isbn = row_isbn
-            return {'status': 'success', 'uuid': uuid, 'isbn': isbn}
+            data = {}
+            data['isbn'] = rows[0][0]
+            data['lc'] = rows[0][1]
+            data['name'] = rows[0][2]
+            data['auth'] = rows[0][3]
+            data['publisher'] = rows[0][4]
+            data['edition'] = rows[0][5]
+            data['imgs'] = rows[0][6]
+            data['tags'] = rows[0][7]
+            data['abstract'] = rows[0][8]
+            return {'status': 'success', 'data': data}
         else:
-            return {'status': 'failure', 'errorInfo': 'This book not exist!'}
+            return {'status': 'failure', 'errorInfo': 'this isbn not exist!'}
 
     @classmethod
     def addBookInstance(cls, isbn):
@@ -297,11 +256,25 @@ class Database(object):
         return {'status': 'success'}
 
     @classmethod
+    def deleteBookInstance(cls, uuid):
+        sql = 'DELETE FROM table_book_instance WHERE key_uuid = \'' + uuid + '\';'
+        try:
+            cls.__cur.execute(sql)
+        except Exception, e:
+            return {'status': 'failure', 'errorInfo': str(e)}
+        finally:
+            cls.__conn.commit()
+        return {'status': 'success'}
+
+    @classmethod
     def modifyBookInstance(cls, info):
         sql = 'UPDATE table_book_instance SET '
         if info.has_key('uuid'):
             if info.has_key('optid'):
-                sql += 'key_opt_id = \'' + info['optid'] + '\' WHERE key_uuid = \'' + info['uuid'] + '\';'
+                if info['optid']:
+                    sql += 'key_opt_id = \'' + info['optid'] + '\' WHERE key_uuid = \'' + info['uuid'] + '\';'
+                else:
+                    sql += 'key_opt_id = null WHERE key_uuid = \'' + info['uuid'] + '\';'
             elif info.has_key('status'):
                 sql += 'key_status = \'' + info['status'] + '\' WHERE key_uuid = \'' + info['uuid'] + '\';'
         elif info.has_key('optid'):
@@ -316,21 +289,50 @@ class Database(object):
         return {'status': 'success'}
 
     @classmethod
-    def searchOperation(cls, uuid):
-        sql = 'SELECT key_return_date, key_status FROM table_book_operation WHERE key_uuid = \'' + uuid + '\';'
+    def searchBookInstance(cls, **kws):
+        sql = 'SELECT key_uuid, key_isbn, key_opt_id, key_status FROM table_book_instance WHERE '
+        if kws.has_key('isbn'):
+            if kws['isbn']:
+                sql += 'key_isbn = \'' + kws['isbn'] + '\';'
+            else:
+                sql += 'key_isbn = null;'
+        elif kws.has_key('uuid'):
+            if kws['uuid']:
+                sql += 'key_uuid = \'' + kws['uuid'] + '\';'
+            else:
+                sql += 'key_uuid = null;'
+        elif kws.has_key('optid'):
+            if kws['optid']:
+                sql += 'key_opt_id = \'' + kws['optid'] + '\';'
+            else:
+                sql += 'key_opt_id = null;'
+        else:
+            return {'status': 'failure', 'errorInfo': 'kws error!'}
         cls.__cur.execute(sql)
         rows = cls.__cur.fetchall()
         if (rows):
-            return {'status': 'success', 'returnDate': str(rows[0][0]), 'statuss': rows[0][1]}
+            data = {}
+            uuid = {}
+            uuids = []
+            for row in rows:
+                uuid['uuid'] = row[0]
+                uuid['optid'] = row[2]
+                uuid['status'] = row[3]
+                uuids.append(uuid)
+                isbn = row[1]
+            data['isbn'] = isbn
+            data['uuids'] = uuids
+            return {'status': 'success', 'data': data}
         else:
-            return {'status': 'failure', 'errorInfo': 'This uuid not exist!'}
+            return {'status': 'failure', 'errorInfo': 'This book not exist!'}
 
     @classmethod
-    def addOperation(cls, info):
-        info['returnDate'] = re.sub('\[|\]|\'|\"', '', str(info['returnDate']))
+    def addOrder(cls, info):
         _uuid = str(uuid.uuid1())
-        sql = 'INSERT INTO table_book_operation (key_uuid, key_return_date, key_status) ' \
-              'VALUES (\'' + _uuid + '\', \'{' + str(info['returnDate']) + '}\', \'' + info['status'] + '\');'
+        _time = str(datetime.datetime.now())
+        sql = 'INSERT INTO table_order_list (key_uuid, key_user, key_timestamp, key_book_opt, key_status) ' \
+              'VALUES (\'' + _uuid + '\', \'' + str(info['userid']) + '\', \'' + _time + '\', \'' + str(
+            info['bookid']) + '\', \'' + info['status'] + '\');'
         try:
             cls.__cur.execute(sql)
         except Exception, e:
@@ -340,10 +342,91 @@ class Database(object):
         return {'status': 'success', 'uuid': _uuid}
 
     @classmethod
+    def deleteOrder(cls, uuid):
+        sql = 'DELETE FROM table_order_list WHERE key_uuid = \'' + uuid + '\';'
+        try:
+            cls.__cur.execute(sql)
+        except Exception, e:
+            return {'status': 'failure', 'errorInfo': str(e)}
+        finally:
+            cls.__conn.commit()
+        return {'status': 'success'}
+
+    @classmethod
+    def modifyOrderStatus(cls, info):
+        sql = 'UPDATE table_order_list SET ' \
+              'key_status = \'' + str(info['status']) + '\' WHERE key_uuid = \'' + info['uuid'] + '\';'
+        try:
+            cls.__cur.execute(sql)
+        except Exception, e:
+            return {'status': 'failure', 'errorInfo': str(e)}
+        finally:
+            cls.__conn.commit()
+        return {'status': 'success', 'uuid': info['uuid']}
+
+    @classmethod
+    def searchOrder(cls, **kws):
+        if kws.has_key('orderid'):
+            if kws.has_key('status'):
+                sql = 'SELECT key_uuid, key_user, key_timestamp, key_book_opt FROM table_order_list ' \
+                      'WHERE key_uuid = \'' + str(kws['orderid']) + '\' AND key_status = \'' + kws['status'] + '\';'
+            else:
+                sql = 'SELECT key_uuid, key_user, key_timestamp, key_book_opt FROM table_order_list ' \
+                      'WHERE key_uuid = \'' + str(kws['orderid']) + '\';'
+        elif kws.has_key('userid'):
+            if kws.has_key('status'):
+                sql = 'SELECT key_uuid, key_user, key_timestamp, key_book_opt FROM table_order_list ' \
+                      'WHERE key_user = \'' + str(kws['userid']) + '\' AND key_status = \'' + kws['status'] + '\';'
+            else:
+                sql = 'SELECT key_uuid, key_user, key_timestamp, key_book_opt FROM table_order_list ' \
+                      'WHERE key_user = \'' + str(kws['userid']) + '\';'
+        else:
+            return {'status': 'failure', 'errorInfo': 'This search condition not exist!'}
+        cls.__cur.execute(sql)
+        rows = cls.__cur.fetchall()
+        if rows:
+            datas = []
+            data = {}
+            for row in rows:
+                data['orderid'] = row[0]
+                data['userid'] = row[1]
+                data['bookid'] = row[3]
+                data['timestamp'] = row[2]
+                datas.append(data)
+            return {'status': 'success', 'data': datas}
+        else:
+            return {'status': 'failure', 'errorInfo': 'This search condition not exist!'}
+
+    @classmethod
+    def addOperation(cls, info):
+        info['date'] = re.sub('\[|\]|\'|\"', '', str(info['date']))
+        _uuid = str(uuid.uuid1())
+        sql = 'INSERT INTO table_book_operation (key_uuid, key_date, key_status) ' \
+              'VALUES (\'' + _uuid + '\', \'{' + str(info['date']) + '}\', \'' + info['status'] + '\');'
+        try:
+            cls.__cur.execute(sql)
+        except Exception, e:
+            return {'status': 'failure', 'errorInfo': str(e)}
+        finally:
+            cls.__conn.commit()
+        return {'status': 'success', 'uuid': _uuid}
+
+    @classmethod
+    def deleteOperation(cls, uuid):
+        sql = 'DELETE FROM table_book_operation WHERE key_uuid = \'' + uuid + '\';'
+        try:
+            cls.__cur.execute(sql)
+        except Exception, e:
+            return {'status': 'failure', 'errorInfo': str(e)}
+        finally:
+            cls.__conn.commit()
+        return {'status': 'success'}
+
+    @classmethod
     def modifyOperationDate(cls, info):
-        info['returnDate'] = re.sub('\[|\]|\'|\"', '', str(info['returnDate']))
+        info['date'] = re.sub('\[|\]|\'|\"', '', str(info['date']))
         sql = 'UPDATE table_book_operation SET ' \
-              'key_return_date = \'{' + str(info['returnDate']) + '}\' WHERE key_uuid = \'' + info['uuid'] + '\';'
+              'key_date = \'{' + str(info['date']) + '}\' WHERE key_uuid = \'' + info['uuid'] + '\';'
         try:
             cls.__cur.execute(sql)
         except Exception, e:
@@ -365,119 +448,101 @@ class Database(object):
         return {'status': 'success'}
 
     @classmethod
-    def searchOrder(cls, status, **kws):
-        t_sql = 'SELECT key_uuid, key_user, key_timestamp, key_book_opt, key_status FROM table_order_list'
-        cls.__cur.execute(t_sql)
+    def searchOperation(cls, uuid):
+        sql = 'SELECT key_date, key_status FROM table_book_operation WHERE key_uuid = \'' + uuid + '\';'
+        cls.__cur.execute(sql)
         rows = cls.__cur.fetchall()
         if (rows):
-            uuid = {}
-            for row in rows:
-                if row[4] == status:
-                    t_uuid = {}
-                    row_uuid = row[0]
-                    row_user_uuid = row[1]
-                    row_timestamp = row[2]
-                    row_book_opt = row[3]
-                    if kws.has_key('uuid'):
-                        if kws['uuid'] == row_user_uuid:
-                            t_uuid['userUUID'] = row_user_uuid
-                            t_uuid['timestamp'] = row_timestamp
-                            t_uuid['opt'] = row_book_opt
-                    else:
-                        t_uuid['userUUID'] = row_user_uuid
-                        t_uuid['timestamp'] = row_timestamp
-                        t_uuid['opt'] = row_book_opt
-                    uuid[row_uuid] = t_uuid
-            return {'status': 'success', 'uuid': uuid }
-        return {'status': 'failure', 'errorInfo': 'This search condition not exist!'}
-
-    @classmethod
-    def addOrder(cls, info):
-        info['optid'] = re.sub('\[|\]|\'|\"', '', str(info['optid']))
-        info['status'] = re.sub('\[|\]|\'|\"', '', str(info['status']))
-        _uuid = str(uuid.uuid1())
-        _time = str(datetime.datetime.now())
-        sql = 'INSERT INTO table_order_list (key_uuid, key_user, key_timestamp, key_book_opt, key_status) ' \
-              'VALUES (\'' + _uuid + '\', \'' + info['userUUID'] + '\', \'' + _time + '\', \'{' + str(info['optid']) + '}\', \'{' + str(info['status']) + '}\');'
-        print sql
-        try:
-            cls.__cur.execute(sql)
-        except Exception, e:
-            return {'status': 'failure', 'errorInfo': str(e)}
-        finally:
-            cls.__conn.commit()
-        return {'status': 'success', 'uuid': _uuid}
-
-    @classmethod
-    def modifyOrderStatus(cls, info):
-        info['status'] = re.sub('\[|\]|\'|\"', '', str(info['status']))
-        sql = 'UPDATE table_order_list SET ' \
-              'key_status = \'{' + str(info['status']) + '}\' WHERE key_uuid = \'' + info['uuid'] + '\';'
-        try:
-            cls.__cur.execute(sql)
-        except Exception, e:
-            return {'status': 'failure', 'errorInfo': str(e)}
-        finally:
-            cls.__conn.commit()
-        return {'status': 'success'}
+            return {'status': 'success', 'date': str(rows[0][0]), 'statuss': rows[0][1]}
+        else:
+            return {'status': 'failure', 'errorInfo': 'This uuid not exist!'}
 
     '''
     创建表
     '''
     @classmethod
     def createTable(cls):
-        cur = cls.__cur
-
-        cur.execute('''DROP TABLE IF EXISTS table_account''')
-        cur.execute('''CREATE TABLE table_account
-                            ( key_uuid          UUID          PRIMARY KEY
-                            , key_password      VARCHAR(512)
-                            , key_user_name     VARCHAR(64)   UNIQUE
-                            , key_first_name    VARCHAR(64)
-                            , key_last_name     VARCHAR(64)
-                            , key_birthday      DATE
-                            , key_register_date DATE
-                            , key_balance       NUMERIC(10,2)
-                            , key_sex           BOOLEAN
-                            , key_tel           BIGINT        UNIQUE NOT NULL CHECK(key_tel > 10000000000 AND key_tel < 20000000000)
-                            , key_right         REAL ); ''')
-
+        # cur = cls.__cur
+        #
+        # cur.execute('''DROP TABLE IF EXISTS table_account''')
+        # cur.execute('''CREATE TABLE table_account
+        #                   ( key_uuid          UUID          PRIMARY KEY
+        #                   , key_password      VARCHAR(512)
+        #                   , key_user_name     VARCHAR(64)   UNIQUE
+        #                   , key_first_name    VARCHAR(64)
+        #                   , key_last_name     VARCHAR(64)
+        #                   , key_birthday      DATE
+        #                   , key_register_date DATE
+        #                   , key_balance       NUMERIC(10,2)
+        #                   , key_sex           BOOLEAN
+        #                   , key_tel           BIGINT        UNIQUE NOT NULL CHECK(key_tel > 10000000000 AND key_tel < 20000000000)
+        #                   , key_right         REAL
+        #                   , key_logo          UUID
+        #                   , key_pledge        NUMERIC(10,2)
+        #                   , key_stu_id        BIGINT       UNIQUE NOT NULL CHECK(key_tel > 10000000000 AND key_tel < 20000000000)
+        #                   ); ''')
+        #
         # cur.execute('''DROP TABLE IF EXISTS table_book_kind''')
         # cur.execute('''CREATE TABLE table_book_kind
-        #                     ( key_isbn         VARCHAR(20) PRIMARY KEY
-        #                     , key_clc          VARCHAR(20)
-        #                     , key_name         TEXT
-        #                     , key_auth         TEXT[]
-        #                     , key_publisher    VARCHAR(64)
-        #                     , key_edition      INTEGER
-        #                     , key_publish_date DATE
-        #                     , key_imgs         BYTEA
-        #                     , key_tags         TEXT[]
-        #                     , key_snapshot     TEXT );''')
+        #                   ( key_isbn         VARCHAR(20) PRIMARY KEY
+        #                   , key_lc           VARCHAR(20)
+        #                   , key_name         TEXT
+        #                   , key_auth         TEXT[]
+        #                   , key_publisher    VARCHAR(64)
+        #                   , key_edition      INTEGER
+        #                   , key_publish_date DATE
+        #                   , key_imgs         UUID
+        #                   , key_tags         TEXT[]
+        #                   , key_abstract     TEXT
+        #                   ); ''')
         #
         # cur.execute('''DROP TABLE IF EXISTS table_book_instance''')
         # cur.execute('''CREATE TABLE table_book_instance
-        #             ( key_uuid   UUID PRIMARY KEY
-        #             , key_isbn   VARCHAR(20)
-        #             , key_status VARCHAR(4)  -- aubr
-        #             , key_opt_id UUID NULL ); ''')
+        #                   ( key_uuid   UUID PRIMARY KEY
+        #                   , key_isbn   VARCHAR(20) -- without the limitation of foreign key
+        #                   , key_status VARCHAR(8)  -- aubr
+        #                   , key_opt_id UUID NULL  -- without the limitation of foreign key
+        #                   ); ''')
         #
         # cur.execute('''DROP TABLE IF EXISTS table_book_operation''')
         # cur.execute('''CREATE TABLE table_book_operation
-        #             ( key_uuid UUID PRIMARY KEY
-        #             , key_return_date DATE[]
-        #             , key_status VARCHAR(4) ); ''')
+        #                   ( key_uuid UUID PRIMARY KEY
+        #                   , key_date DATE[]
+        #                   , key_status VARCHAR(8) -- same to book instance's
+        #                   ) ''')
         #
         # cur.execute('''DROP TABLE IF EXISTS table_order_list''')
         # cur.execute('''CREATE TABLE table_order_list
-        #              ( key_uuid UUID PRIMARY KEY
-        #              , key_user UUID NOT NULL
-        #              , key_timestamp DATE NOT NULL
-        #              , key_book_opt  UUID[]
-        #              , key_status VARCHAR[6] ); ''')
+        #                   ( key_uuid UUID PRIMARY KEY
+        #                   , key_user UUID NOT NULL
+        #                   , key_timestamp DATE NOT NULL
+        #                   , key_book_opt  UUID
+        #                   , key_status VARCHAR(8)
+        #                   ); ''')
+        #
+        # cur.execute('''DROP TABLE IF EXISTS table_image''')
+        # cur.execute('''CREATE TABLE table_image
+        #                   ( key_uuid UUID PRIMARY KEY
+        #                   , key_mime TEXT NOT NULL
+        #                   , key_data BYTEA
+        #                   ); ''')
+        #
+        # cur.execute('''DROP TABLE IF EXISTS table_location''')
+        # cur.execute('''CREATE TABLE table_location
+        #                   ( key_begin TEXT NOT NULL
+        #                   , key_end TEXT NOT NULL
+        #                   , key_location TEXT PRIMARY KEY
+        #                   ); ''')
+        #
+        # cur.execute('''DROP TABLE IF EXISTS table_search_history''')
+        # cur.execute('''CREATE TABLE table_search_history
+        #                   ( key_book VARCHAR(20) NOT NULL
+        #                   , key_user UUID NOT NULL
+        #                   , key_time TIME NOT NULL
+        #                   , PRIMARY KEY (key_book,key_user,key_time)
+        #                   ); ''')
 
         cls.__conn.commit()
-
 
     '''
     测试创建临时数据
