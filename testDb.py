@@ -388,6 +388,121 @@ def testSearchOperation():
     print DB.searchOperation('0220aff0-c05c-11e7-9df1-186590dcbd6f')
     print '''\n\n'''
 
+# ******* addLocation *******
+# {'status': 'success'}
+def testAddLocation():
+    print '''******* addLocation *******'''
+    info = {}
+    info['begin'] = 'bbb'
+    info['end'] = 'eee'
+    info['location'] = 'lololol'
+    print DB.addLocation(info)
+    print '''\n\n'''
+
+def testDeleteLocation():
+    print '''******* deleteLocation *******'''
+    print '''\n\n'''
+
+def testModifyLocation():
+    print '''******* modifyLocation *******'''
+    print '''\n\n'''
+
+# ******* searchLocation *******
+# 118-8
+# 309-5
+# 301-1
+# 109-3
+def testSearchLocation():
+    print '''******* searchLocation *******'''
+    print DB.searchLocation('a')
+    print DB.searchLocation('a')
+    print DB.searchLocation('a')
+    print DB.searchLocation('a')
+    print '''\n\n'''
+
+# ******* addHistory *******
+# {'status': 'success'}
+# {'status': 'success'}
+# {'status': 'success'}
+def testAddHistory():
+    print '''******* addHistory *******'''
+    info = {}
+    info['bookid'] = 'book_id'
+    info['userid'] = '718b789c-c041-11e7-aadc-186590dcbd6f'
+    print DB.addHistory(info)
+    print DB.addHistory(info)
+    info['bookid'] = 'book_id1'
+    print DB.addHistory(info)
+    print '''\n\n'''
+
+# ******* searchHistory *******
+# {'status': 'success', 'date': [
+#               {'userid': '718b789c-c041-11e7-aadc-186590dcbd6f', 'bookid': 'book_id', 'time': '17:59:28.565545'},
+#               {'userid': '718b789c-c041-11e7-aadc-186590dcbd6f', 'bookid': 'book_id1', 'time': '17:59:28.597863'},
+#               {'userid': '718b789c-c041-11e7-aadc-186590dcbd6f', 'bookid': 'book_id', 'time': '17:59:44.883426'},
+#               {'userid': '718b789c-c041-11e7-aadc-186590dcbd6f', 'bookid': 'book_id', 'time': '17:59:44.885723'},
+#               {'userid': '718b789c-c041-11e7-aadc-186590dcbd6f', 'bookid': 'book_id1', 'time': '17:59:44.886228'}]
+# }
+def testSearchHistory():
+    print '''******* searchHistory *******'''
+    print DB.searchHistory('718b789c-c041-11e7-aadc-186590dcbd6f')
+    print '''\n\n'''
+
+# ******* searchAllHistory *******
+# {'status': 'success', 'date': [
+#               {'userid': '718b789c-c041-11e7-aadc-186590dcbd6f', 'bookid': 'book_id', 'time': '17:59:28.565545'},
+#               {'userid': '718b789c-c041-11e7-aadc-186590dcbd6f', 'bookid': 'book_id1', 'time': '17:59:28.597863'},
+#               {'userid': '718b789c-c041-11e7-aadc-186590dcbd6f', 'bookid': 'book_id', 'time': '17:59:44.883426'},
+#               {'userid': '718b789c-c041-11e7-aadc-186590dcbd6f', 'bookid': 'book_id', 'time': '17:59:44.885723'},
+#               {'userid': '718b789c-c041-11e7-aadc-186590dcbd6f', 'bookid': 'book_id1', 'time': '17:59:44.886228'}]
+# }
+def testSearchAllHistory():
+    print '''******* searchAllHistory *******'''
+    print DB.searchAllHistory()
+    print '''\n\n'''
+
+# ******* addImage *******
+# {'status': 'success', 'uuid': '38e50d1e-c215-11e7-9fe3-186590dcbd6f'}
+# {'status': 'success', 'uuid': '38eba7dc-c215-11e7-881f-186590dcbd6f'}
+# {'status': 'success', 'uuid': '38ec7963-c215-11e7-b486-186590dcbd6f'}
+def testAddImage():
+    print '''******* addImage *******'''
+    info = {}
+    info['mime'] = 'mime'
+    info['data'] = 'dadadada'
+    print DB.addImage(info)
+    print DB.addImage(info)
+    print DB.addImage(info)
+    print '''\n\n'''
+
+# ******* deleteImage *******
+# {'status': 'success'}
+def testDeleteImage():
+    print '''******* deleteImage *******'''
+    print DB.deleteImage('38ec7963-c215-11e7-b486-186590dcbd6f')
+    print '''\n\n'''
+
+# ******* modifyImage *******
+# {'status': 'success'}
+def testModifyImage():
+    print '''******* modifyImage *******'''
+    info = {}
+    info['mime'] = 'mmmmime'
+    info['data'] = 'dadadada'
+    info['uuid'] = '38eba7dc-c215-11e7-881f-186590dcbd6f'
+    print DB.modifyImage(info)
+
+# ******* searchImage *******
+# {'status': 'success', 'date': {'data': 'dadadada', 'mime': 'mmmmime'}}
+# {'status': 'success', 'date': {'data': 'dadadada', 'mime': 'mime'}}
+# {'status': 'failure', 'errorInfo': 'This uuid not exist!'}
+def testSearchImage():
+    print '''******* searchImage *******'''
+    print DB.searchImage('38eba7dc-c215-11e7-881f-186590dcbd6f')
+    print DB.searchImage('38e50d1e-c215-11e7-9fe3-186590dcbd6f')
+    print DB.searchImage('38e50d1e-c215-11e7-9fe3-186590dcbd6e')
+    print '''\n\n'''
+
 def main():
 
     DB.setConnDefalt()
@@ -444,13 +559,28 @@ def main():
     # testModifyOperationStatus()
     #
     # testSearchOperation()
+    #
+    # testAddLocation()
+    #
+    # testDeleteLocation()
+    #
+    # testModifyLocation()
+    #
+    # testSearchLocation()
+    #
+    # testAddHistory()
+    #
+    # testSearchHistory()
+    #
+    # testSearchAllHistory()
+    #
+    # testAddImage()
+    #
+    # testDeleteImage()
+    #
+    # testModifyImage()
 
-
-
-
-
-
-
+    testSearchImage()
 
 
     # TODO
@@ -461,5 +591,6 @@ def main():
     # testModifyBookInfo()
 
     # testModifyBookPicture()
+
 
 main()

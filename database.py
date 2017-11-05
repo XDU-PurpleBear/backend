@@ -457,6 +457,133 @@ class Database(object):
         else:
             return {'status': 'failure', 'errorInfo': 'This uuid not exist!'}
 
+    @classmethod
+    def addLocation(cls, info):
+        sql = 'INSERT INTO table_location (key_begin, key_end, key_location) ' \
+              'VALUES (\'' + info['begin'] + '\', \'' + info['end'] + '\', \'' + info['location'] + '\');'
+        try:
+            cls.__cur.execute(sql)
+        except Exception, e:
+            return {'status': 'failure', 'errorInfo': str(e)}
+        finally:
+            cls.__conn.commit()
+        return {'status': 'success'}
+
+    @classmethod
+    def deleteLocation(cls):
+        pass
+
+    @classmethod
+    def modifyLocation(cls):
+        pass
+
+    @classmethod
+    def searchLocation(cls, lc):
+        import random
+        r = random.randint(101, 400)
+        if r%10 == 0:
+            r += 1
+        if r%100 > 70:
+            r = (r / 100) * 100 + 20 + r % 10
+        elif r%100 > 50:
+            r = (r / 100) * 100 + 10 + r % 10
+        elif r%100 > 20:
+            r = (r / 100) * 100 + 0 + r % 10
+        return str(r) + '-' + str(random.randint(1, 8))
+
+    @classmethod
+    def addHistory(cls, info):
+        sql = 'INSERT INTO table_search_history (key_book, key_user, key_time) ' \
+              'VALUES (\'' + info['bookid'] + '\', \'' + str(info['userid']) + '\', \'' + str(datetime.datetime.now()) + '\');'
+        try:
+            cls.__cur.execute(sql)
+        except Exception, e:
+            return {'status': 'failure', 'errorInfo': str(e)}
+        finally:
+            cls.__conn.commit()
+        return {'status': 'success'}
+
+    @classmethod
+    def deleteHistory(cls):
+        pass
+
+    @classmethod
+    def modifyHistory(cls):
+        pass
+
+    @classmethod
+    def searchHistory(cls, uuid):
+        if (uuid):
+            sql = 'SELECT * FROM table_search_history WHERE key_user = \'' + uuid + '\';'
+        else:
+            sql = 'SELECT * FROM table_search_history ;'
+        cls.__cur.execute(sql)
+        rows = cls.__cur.fetchall()
+        if (rows):
+            datas = []
+            for row in rows:
+                data = {}
+                data['bookid'] = row[0]
+                data['userid'] = row[1]
+                data['time'] = str(row[2])
+                datas.append(data)
+            return {'status': 'success', 'date': datas}
+        else:
+            return {'status': 'failure', 'errorInfo': 'This uuid not exist!'}
+
+    @classmethod
+    def searchAllHistory(cls):
+        return cls.searchHistory(None)
+
+    @classmethod
+    def addImage(cls, info):
+        _uuid = str(uuid.uuid1())
+        sql = 'INSERT INTO table_image (key_uuid, key_mime, key_data) ' \
+              'VALUES (\'' + _uuid + '\', \'' + str(info['mime']) + '\', \'' + str(info['data']) + '\');'
+        try:
+            cls.__cur.execute(sql)
+        except Exception, e:
+            return {'status': 'failure', 'errorInfo': str(e)}
+        finally:
+            cls.__conn.commit()
+        return {'status': 'success', 'uuid': _uuid}
+
+    @classmethod
+    def deleteImage(cls, uuid):
+        sql = 'DELETE FROM table_image WHERE key_uuid = \'' + uuid + '\';'
+        try:
+            cls.__cur.execute(sql)
+        except Exception, e:
+            return {'status': 'failure', 'errorInfo': str(e)}
+        finally:
+            cls.__conn.commit()
+        return {'status': 'success'}
+
+    @classmethod
+    def modifyImage(cls, info):
+        sql = 'UPDATE table_image SET key_mime = \'' + info['mime'] + '\', key_data = \'' + info['data'] + '\' WHERE key_uuid = \'' + str(info['uuid']) + '\';'
+        try:
+            cls.__cur.execute(sql)
+        except Exception, e:
+            return {'status': 'failure', 'errorInfo': str(e)}
+        finally:
+            cls.__conn.commit()
+        return {'status': 'success'}
+
+    @classmethod
+    def searchImage(cls, uuid):
+        sql = 'SELECT key_mime, key_data FROM table_image WHERE key_uuid = \'' + uuid + '\';'
+        cls.__cur.execute(sql)
+        rows = cls.__cur.fetchall()
+        if (rows):
+            data = {}
+            data['mime'] = rows[0][0]
+            data['data'] = str(rows[0][1])
+            return {'status': 'success', 'date': data}
+        else:
+            return {'status': 'failure', 'errorInfo': 'This uuid not exist!'}
+
+
     '''
     创建表
     '''
