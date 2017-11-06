@@ -1,0 +1,10 @@
+pull:
+	docker pull qinka/pb-database:pb-auth-dev-aii-v1-0.1.0-64b9ffd
+	docker pull redis
+	ps：可以去daocloud使用加速器
+run:
+	docker run -it -p 6379:6379 redis
+	docker run -p 3000:3000 -it qinka/pb-database:pb-auth-dev-aii-v1-0.1.0-f3c15d9 -c "pb-auth 3000 192.168.1.101 6379"
+	ps：
+		6379是redis的绑定端口，随时可以改
+		10.0.75.1是Hyper V的地址，可以通过任务管理器查询
