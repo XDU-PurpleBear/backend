@@ -408,16 +408,20 @@ def testModifyLocation():
     print '''\n\n'''
 
 # ******* searchLocation *******
-# 118-8
-# 309-5
-# 301-1
-# 109-3
+# {'status': 'success', 'location': '101-11'}
+# {'status': 'success', 'location': '504-18'}
+# {'status': 'success', 'location': '601-10'}
+# {'status': 'failure', 'errorInfo': 'This location not exist!'}
+# {'status': 'success', 'location': '301-14'}
+# {'status': 'failure', 'errorInfo': 'This location not exist!'}
 def testSearchLocation():
     print '''******* searchLocation *******'''
-    print DB.searchLocation('a')
-    print DB.searchLocation('a')
-    print DB.searchLocation('a')
-    print DB.searchLocation('a')
+    print DB.searchLocation('AN1')
+    print DB.searchLocation('VK5')
+    print DB.searchLocation('Z9')
+    print DB.searchLocation('Z123')
+    print DB.searchLocation('KU/KUQ2')
+    print DB.searchLocation('KU/K:d?')
     print '''\n\n'''
 
 # ******* addHistory *******
@@ -508,8 +512,8 @@ def main():
     DB.setConnDefalt()
 
     # DB.createTable()
-    # DB.generateTestData()
-    #
+    DB.generateTestData()
+
     # testAddUser()
     #
     # testDeleteUser()
@@ -579,8 +583,8 @@ def main():
     # testDeleteImage()
     #
     # testModifyImage()
-
-    testSearchImage()
+    #
+    # testSearchImage()
 
 
     # TODO

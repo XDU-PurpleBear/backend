@@ -479,17 +479,27 @@ class Database(object):
 
     @classmethod
     def searchLocation(cls, lc):
-        import random
-        r = random.randint(101, 400)
-        if r%10 == 0:
-            r += 1
-        if r%100 > 70:
-            r = (r / 100) * 100 + 20 + r % 10
-        elif r%100 > 50:
-            r = (r / 100) * 100 + 10 + r % 10
-        elif r%100 > 20:
-            r = (r / 100) * 100 + 0 + r % 10
-        return str(r) + '-' + str(random.randint(1, 8))
+        sql = 'SELECT * FROM table_location;'
+        cls.__cur.execute(sql)
+        rows = cls.__cur.fetchall()
+        if (rows):
+            for row in rows:
+                lc = lc.upper()
+                if cmp(row[0], lc) <= 0 and cmp(lc, row[1]) <= 0:
+                    return {'status': 'success', 'location': row[2]}
+        return {'status': 'failure', 'errorInfo': 'This location not exist!'}
+
+        # import random
+        # r = random.randint(101, 400)
+        # if r%10 == 0:
+        #     r += 1
+        # if r%100 > 70:
+        #     r = (r / 100) * 100 + 20 + r % 10
+        # elif r%100 > 50:
+        #     r = (r / 100) * 100 + 10 + r % 10
+        # elif r%100 > 20:
+        #     r = (r / 100) * 100 + 0 + r % 10
+        # return str(r) + '-' + str(random.randint(1, 8))
 
     @classmethod
     def addHistory(cls, info):
@@ -676,4 +686,25 @@ class Database(object):
     '''
     @classmethod
     def generateTestData(cls):
-        pass
+        cls.__cur.execute('''DROP TABLE IF EXISTS table_location''')
+        cls.__cur.execute('''CREATE TABLE table_location
+                          ( key_begin TEXT NOT NULL
+                          , key_end TEXT NOT NULL
+                          , key_location TEXT PRIMARY KEY
+                          ); ''')
+
+        for line in open("locationdb.txt"):
+            if line:
+                lst = line.strip('\r\n').split(' ')
+                sql = 'INSERT INTO table_location (key_begin, key_end, key_location) ' \
+                      'VALUES (\'' + lst[0] +'\', \'' + lst[1] +'\' , \'' + lst[2] + '\');'
+                try:
+                    cls.__cur.execute(sql)
+                except Exception, e:
+                    return str(e)
+                finally:
+                    cls.__conn.commit()
+
+
+
+
