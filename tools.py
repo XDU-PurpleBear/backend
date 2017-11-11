@@ -30,11 +30,13 @@ bookStatus = {
     'Borrowed':'--b-',
     'Reserved':'---r'
 }
-recomends = ['1','2','3','4','5','6','7','8','9','10']
+recomends = ['isbn 0','isbn 1','isbn 2','isbn 3',]
 
 #location : '103-2'
 def divideLocation(location):
+    # print location
     data = location.split('-')
+    # print data
     return {
         'room':data[0],
         'shelf':data[1]
@@ -45,9 +47,9 @@ def divideTags(tags):
     the = []
     lan = []
     for tag in tags:
-        if tag in the:
+        if tag in theme:
             the.append(tag)
-        elif tag in lan:
+        elif tag in language:
             lan.append(tag)
         else:
             pass
@@ -73,6 +75,7 @@ def getRecomend():
     return recomends[r]
     
 def getMinus(a,b):
+    # print a,b
     da = datetime.datetime.strptime(a,'%Y-%m-%d %H:%M:%S.%f')
     db = datetime.datetime.strptime(b,'%Y-%m-%d %H:%M:%S.%f')
     delta = da - db

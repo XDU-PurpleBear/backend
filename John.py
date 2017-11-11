@@ -127,14 +127,16 @@ def searchOnJohn(data):
         if John.has_key('uuid'):
             retInfo['uuid'] = John['uuid']
             retInfo['right'] = John['right']
-            retInfo['tokenDate'] = John['nextExpire']
+            retInfo['tokenDate'] = John['newExpire']
             retInfo['status'] = 'success'
+            
         else:
             retInfo['errorInfo'] = 'no user'
             retInfo['status'] = 'failure'
     else:
         retInfo['status'] = 'failure'
         retInfo['errorInfo'] = 'Unexpect operation'
+    
     return retInfo
     
 def deleteOnJohn(data):
@@ -163,7 +165,7 @@ def connectionJohn(info):
     body = urllib.urlencode(data)
     conn.request(method,'/aii/v1/auth' , body, {'user-agent':'uuid-test','Content-Type':'application/x-www-form-urlencoded'})
     fromJohn = json.loads(conn.getresponse().read())
-    print fromJohn
+    #print fromJohn
     conn.close()
     return fromJohn
     

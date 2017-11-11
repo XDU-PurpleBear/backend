@@ -9,14 +9,16 @@ import John as J
 import tools
 import datetime
 
+# finish
 def login(info):
     fordb = {'type':info['type'],'value':info['value']}
     #查询用户是否存在数据库
     retdb = Z.getUserUUID(fordb)
     if retdb['status'] != 'success':
         return retdb
+    userid = retdb['uuid']
     #这一步仅为排除系统错误
-    retdb = Z.getUserPWD(retdb['uuid'])
+    retdb = Z.getUserPWD(userid)
     if retdb['status'] != 'success':
         return retdb
     #密码核实
@@ -42,20 +44,22 @@ def login(info):
         'tokendate' : retjohn['tokenDate'],    
         'data':{
             'username' : userinfo['username'],
-            'image' : userinfo['image'],
+            'image' : userinfo['logo'],
             'usertype' : usertype
         }
     }
     return retinfo
 
+# finish
 def logout(info):
-    retjohn = Z.deleteOnJohn({'token':info['token']})
+    retjohn = J.deleteOnJohn({'token':info['token']})
     return retjohn
     
+# finish
 def searchBook(info):
     tokendate = ''
     #检查是否存在token
-    if info.has_key(token):
+    if info.has_key('token'):
         retjohn = J.searchOnJohn({'token':info['token']})
         if retjohn['status'] != 'success':
             return retjohn
@@ -67,16 +71,19 @@ def searchBook(info):
             # retdb['tokendate'] = tokendate
         return retdb
     isbns = retdb['isbn']
-    booklist,languages,roomsthemes = [],[],[]
+    booklist,languages,rooms,themes = [],[],[],[]
     for isbn in isbns:
         #根据isbn获取书籍基本信息
         dbkind = getBookInfo(isbn)
         if dbkind['status'] != 'success':
             continue
         #获取筛选器数据
+        # print dbkind
+        # print '---------------------'
+        roomTemp = dbkind['data']['position']['room']
         languages.extend(dbkind['data']['language'])
         themes.extend(dbkind['data']['theme'])
-        rooms.extend(dbkind['data']['position']['room'])
+        rooms.extend([roomTemp])
         #根据isbn获取副本数量信息
         counts = 0
         dbinstance = Z.searchBookInstance(isbn=isbn)
@@ -114,17 +121,19 @@ def searchBook(info):
         retinfo['tokendate'] = tokendate
     return retinfo
     
+# finish
 def searchBookByISBN(info):
     #查询token,判断用户在线状态，之后会使用返回值中的right
     tokendate,right = '',0
-    if info.has_key('toekn')
+    if info.has_key('token'):
         retjohn = J.searchOnJohn({'token':info['token']})
         if retjohn['status'] != 'success':
             return retjohn
         tokendate = retjohn['tokenDate']
         right = retjohn['right']
+        Z.addHistory({'userid':retjohn['uuid'],'bookid':info['ISBN']})
     #根据isbn查询书籍基本信息
-    dbkind = getBookInfo(info['isbn'])
+    dbkind = getBookInfo(info['ISBN'])
     if dbkind['status'] != 'success':
         # if tokendate != '':
             # dbkind['tokendate'] = retjohn['tokenDate']
@@ -139,19 +148,20 @@ def searchBookByISBN(info):
         'CLC':dbkind['data']['lc'],
         'image':dbkind['data']['imgs'],
         'description':dbkind['data']['abstract'],
-        'position':position,
-        'language':tag['language'],
-        'theme':tag['theme'],
+        'position':dbkind['data']['position'],
+        'language':dbkind['data']['language'],
+        'theme':dbkind['data']['theme'],
     }
     #根据isbn查询副本信息，根据right在bookinfo中添加相应信息
     counts = 0
-    dbinstance = Z.searchBookInstance(info['isbn'])
+    dbinstance = Z.searchBookInstance(isbn=info['ISBN'])
     if dbinstance['status'] != 'success':
         bookinfo['amount'] = counts
         bookinfo['copys'] = []
     else:
         books = dbinstance['data']['uuids']
         copys = []
+        # print books,'in test'
         for book in books:
             if right == 2:
                 copys.append({
@@ -159,6 +169,7 @@ def searchBookByISBN(info):
                     'status':tools.changeBookStatus(book['status'])
                 })
                 counts = len(books)
+                
             elif book['status'] == 'a---':
                 copys.append({
                     'uuid':book['uuid'],
@@ -178,11 +189,68 @@ def searchBookByISBN(info):
     if tokendate != '':
         retinfo['tokendate'] = tokendate
     return retinfo
-    
+      
+def getImage(route):
+    dbimg = Z.searchImg(route)
+    if dbimg['status'] != 'success':
+        return dbimg
+    return {
+        'data':{
+            'binarydata':'',
+            'MIME':''
+        }
+    }   
+
+# finish
+def searchUserInfo(info):
+    #在线状态查询
+    retjohn = J.searchOnJohn({'token':info['token']})
+    if retjohn['status'] != 'success':
+        return retjohn
+    #核实身份
+    if retjohn['right'] == 2:
+        return {
+            'status':'failure',
+            'errorInfo':'Admin do not have a Info Page!',
+            'tokendate':retjohn['tokenDate']
+        }
+    #查询用户基本信息
+    dbuser = Z.getUserInfo(retjohn['uuid'])
+    if dbuser['status'] != 'success':
+        return dbuser
+    #查询订单基本信息
+    dborder = Z.searchOrder(userid=retjohn['uuid'],status='---o-')
+    orders = dborder['data']
+    overdays = 0
+    if len(orders) != 0:
+        for order in orders:
+            borrowdate = str(order['timestamp'])
+            now = str(datetime.datetime.now())
+            overdays += tools.getMinus(now,borrowdate)
+    #构建用户信息
+    userinfo = {
+        'userName':dbuser['data']['username'],
+        'uuid':dbuser['data']['uuid'],
+        'studentID':str(dbuser['data']['stuid']),
+        'tel':str(dbuser['data']['tel']),
+        'balance':dbuser['data']['balance'],
+        'userImage':dbuser['data']['logo'],
+        'orderNumber':len(orders),
+        'fine':overdays * 1
+    }
+    return {
+        'status':'success',
+        'tokendate':retjohn['tokenDate'],
+        'data':{
+            'userInfo':userinfo
+        }
+    }
+   
+# finish   
 def recomends(info):
     #判断是哪种用户，注册用户，或是游客
     tokendate = ''
-    if info.has_key('token')
+    if info.has_key('token'):
         retjohn = J.searchOnJohn({'token':info['token']})
         if retjohn['status'] != 'success':
             return retjohn
@@ -212,71 +280,11 @@ def recomends(info):
     if tokendate != '':
         retinfo['tokendate'] = tokendate
     return retinfo
-    
-def getImage(route):
-    dbimg = Z.searchImg(route)
-    if dbimg['status'] != 'success':
-        return dbimg
-    return {
-        'data':{
-            'binarydata':'',
-            'MIME':''
-        }
-    }
-
-def getUserInfo(info):
-    #在线状态查询
-    retjohn = Z.searchOnJohn({'token':info['token']})
-    if retjohn['status'] != 'success':
-        return retjohn
-    #核实身份
-    if retjohn['right'] == '2':
-        return {
-            'status':'failure',
-            'errorInfo':'Admin do not have a Info Page!',
-            'tokendate':retjohn['tokenDate']
-        }
-    #查询用户基本信息
-    dbuser = Z.getUserInfo(retjohn['uuid'])
-    if dbuser['status'] != 'success':
-        # dbuser['tokendate'] = retjohn['tokenDate']
-        return dbuser
-    #查询订单基本信息
-    dborder = Z.searchOrder(userid=retjohn['uuid'],status='---o-')
-    if dborder['status'] != 'success':
-        # dborder['tokendate'] = retjohn['tokenDate']
-        return dborder
-    orders = dborder['data']
-    overdays = 0
-    if len(orders) != 0:
-        for order in orders:
-            optid = order['bookid']
-            borrowdate = str(order['timestamp'])
-            now = str(datetime.datetime.now())
-            overdays += tools.getMinus(now,borrowdate)
-    #构建用户信息
-    userinfo = {
-        'userName':dbuser['data']['username'],
-        'uuid':dbuser['data']['uuid'],
-        'studentID':dbuser['data']['stuid'],
-        'tel':dbuser['data']['tel'],
-        'balance':dbuser['data']['balance'],
-        'userImage':dbuser['data']['logo'],
-        'orderNumber':len(orders),
-        'fine':overdays * 1
-    }
-    return {
-        'status':'success',
-        'tokendate':retjohn['tokenDate'],
-        'data':{
-            'userInfo':userinfo
-        }
-    }
-    
-    
+   
+# finish
 def searchHistory(info):
     #在线状态查询
-    retjohn = Z.searchOnJohn({'token':info['token']})
+    retjohn = J.searchOnJohn({'token':info['token']})
     if retjohn['status'] != 'success':
         return retjohn
     #获取历史纪录
@@ -284,7 +292,7 @@ def searchHistory(info):
     if dbhistory['status'] != 'success':
         # dbhistory['toekndate'] = retjohn['toeknDate']
         return dbhistory
-    historys = dbhistory['data']
+    historys = dbhistory['date']
     booklist = []
     for his in historys:
         #获取书籍基本信息
@@ -307,15 +315,16 @@ def searchHistory(info):
         'status':'success',
         'data':{
             'bookList':booklist
-        }
+        },
         'tokendate':retjohn['tokenDate']
     }
     return retinfo
     
+# finish
 def signup(info):
     newUser = info['newUser']
     #身份核实
-    retjohn = J.searchOnJohn({'token':info['token'})
+    retjohn = J.searchOnJohn({'token':info['token']})
     if retjohn['status'] != 'success':
         return retjohn
     if retjohn['right'] != 2:
@@ -346,9 +355,9 @@ def signup(info):
             fordb = {
                 'password':newUser['password'],
                 'tel':newUser['tel'],
-                'username':newUser['username']
+                'username':newUser['userName'],
                 'balance':newUser['balance'],
-                'plege':newUser['deposit'],
+                'pledge':newUser['deposit'],
                 'stu_id':newUser['studentID']
             }
             retdb = Z.addUser(fordb)
@@ -356,9 +365,10 @@ def signup(info):
             retInfo['tokendate'] = retjohn['tokenDate']
     return retInfo
     
+# finish
 def searchUserInfoAdmin(info):
     #身份核实
-    retjohn = Z.searchOnJohn({'token':info['token']})
+    retjohn = J.searchOnJohn({'token':info['token']})
     if retjohn['status'] != 'success':
         return retjohn
     if retjohn['right'] != 2:
@@ -386,8 +396,8 @@ def searchUserInfoAdmin(info):
             'userInfo':{
                 "userName": dbuser['data']['username'],
                 "uuid": dbuser['data']['uuid'],
-                "studentID": dbuser['data']['stuid'],
-                "tel": dbuser['data']['tel'],
+                "studentID": str(dbuser['data']['stuid']),
+                "tel": str(dbuser['data']['tel']),
                 "balance": dbuser['data']['balance'],
                 "userImage": dbuser['data']['logo']
             }
@@ -395,9 +405,10 @@ def searchUserInfoAdmin(info):
     }
     return retinfo
     
+# finish
 def editUserInfo(info):
     #身份核实
-    retjohn = Z.searchOnJohn({'token':info['token']})
+    retjohn = J.searchOnJohn({'token':info['token']})
     if retjohn['status'] != 'success':
         return retjohn
     if retjohn['right'] != 2:
@@ -421,24 +432,65 @@ def editUserInfo(info):
     }
     return retinfo
    
-# def addBook(info):
-    # retjohn = Z.searchOnJohn({'token':info['token']})
-    # if retjohn['status'] != 'success':
-        # return retjohn
-    # if retjohn['right'] != 2:
-        # return {
-            # 'status':'failure',
-            # 'errorInfo':'You don not have this right!'
-        # }
-    # img = info['bookinfo'].pop('image')
-    
+# finish
+def addBook(info):
+    retjohn = J.searchOnJohn({'token':info['token']})
+    if retjohn['status'] != 'success':
+        return retjohn
+    if retjohn['right'] != 2:
+        return {
+            'status':'failure',
+            'errorInfo':'You don not have this right!'
+        }
+    tags = []
+    tags.extend(info['bookInfo']['language'])
+    tags.extend(info['bookInfo']['theme'])
+    print tags,'in test'
+    fordb = {
+        'isbn' : info['bookInfo']['ISBN'],
+        'lc' : info['bookInfo']['CLC'],
+        'name' : info['bookInfo']['name'],
+        'auth' : info['bookInfo']['auth'],
+        'publisher' : info['bookInfo']['publisher'],
+        'edition' : info['bookInfo']['version'],
+        'imgs' : info['bookInfo']['image'],
+        'tags' : tags,
+        'abstract' : info['bookInfo']['description']
+    }
+    dbkind = Z.addBookInfo(fordb)
+    if dbkind['status'] != 'success':
+        return dbkind
+    dblocation = Z.searchLocation(info['bookInfo']['CLC'])
+    if dblocation['status'] != 'success':
+        return dblocation
+    position = tools.divideLocation(dblocation['location'])
+    copys = []
+    for i in range(int(info['bookInfo']['amount'])):
+        dbinstance = Z.addBookInstance(info['bookInfo']['ISBN'])
+        if dbinstance['status'] != 'success':
+            continue
+        copys.append({'uuid':dbinstance['uuid'],'status':'Available'})
+    retinfo = {
+        'status':'status',
+        'toekndate':retjohn['tokenDate'],
+        'data':{
+            'bookInfo':info['bookInfo']
+        }
+    }
+    retinfo['data']['bookInfo']['amount'] = len(copys)
+    retinfo['data']['bookInfo']['copys'] = copys
+    retinfo['data']['bookInfo']['position'] = position
+    return retinfo
+
+# finish    
 def addBookCopy(info):
     block = {
         'info':info,
         'type':'add'
     }
     return modifyBookCopy(block)
-
+# 查不到等价于成功
+# finish
 def deleteBookCopy(info):
     block = {
         'info':info,
@@ -446,6 +498,7 @@ def deleteBookCopy(info):
     }
     return modifyBookCopy(block)
 
+# finish
 def editBookCopy(info):
     block = {
         'info':info,
@@ -459,7 +512,7 @@ def modifyBookCopy(info):
         # 'type':'add'
     # }
     #身份核实
-    retjohn = Z.searchOnJohn({'token':info['info']['token']})
+    retjohn = J.searchOnJohn({'token':info['info']['token']})
     if retjohn['status'] != 'success':
         return retjohn
     if retjohn['right'] != 2:
@@ -476,7 +529,7 @@ def modifyBookCopy(info):
         dbkind = Z.deleteBookInstance(info['info']['uuid'])
     elif info['type'] == 'edit':
         #修改副本状态
-        dbinstance = Z.searchBookInstance(info['info']['uuid'])
+        dbinstance = Z.searchBookInstance(uuid=info['info']['uuid'])
         if dbinstance['status'] != 'success':
             return dbinstance
         if dbinstance['data']['uuids'][0]['status'] == '--b-':
@@ -502,22 +555,61 @@ def modifyBookCopy(info):
         retinfo['data'] = {'uuid':dbkind['uuid']}
     return retinfo
 
+#finish
 def apply(info):
     #获取在线状态
-    retjohn = Z.searchOnJohn({'token':info['token']})
+    retjohn = J.searchOnJohn({'token':info['token']})
     if retjohn['status'] != 'success':
         return retjohn
+    if retjohn['right'] == 2:
+        return {
+            'status':'failure',
+            'errorInfo':'Sorry ,Admin don not have this right!'
+        }
+    #查询该用户所有订单数
+    dborder = Z.searchOrder(userid=retjohn['uuid'])
+    counts = 0
+    for one in dborder['data']:
+        if one['status'] == 'a----':
+            counts += 1
+        elif one['status'] == '-b---':
+            counts += 1
+        elif one['status'] == '---o-':
+            counts += 1
+        else:
+            pass
+    if counts > 1:
+        return {
+            'status':'failure',
+            'errorInfo':'Sorry ,You can only apply less than two Books!'
+        }
+    #查询该书是否已被借出
+    dbinstance = Z.searchBookInstance(uuid=info['uuid'])
+    if dbinstance['status'] != 'success':
+        return dbinstance
+    if dbinstance['data']['uuids'][0]['status'] != 'a---':
+        return {
+            'status': 'failure',
+            'errorInfo': 'This book do not allow to borrow!'
+        }
+    #查询该书是否已被申请
+    dborder = Z.searchOrder(bookid=info['uuid'],status='a----')
+    if len(dborder['data']) > 0:
+        return {
+            'status':'failure',
+            'errorInfo':'Sorry ,This book has been applied!'
+        }
     #添加申请订单
     dborder = Z.addOrder({'userid':retjohn['uuid'],'bookid':info['uuid'],'status':'a----'})
     if dborder['status'] != 'success':
-        # dborder['tokendate'] = retjohn['tokenDate']
         return dborder
     retinfo = {
         'status':'success',
         'tokendate':retjohn['tokenDate']
     }
     return retinfo
-    
+  
+# finish  
 def agreeBorrow(info):
     block = {
         'info':info,
@@ -525,6 +617,7 @@ def agreeBorrow(info):
     }
     return actionOfBook(block)
     
+# finish
 def refuseBorrow(info):
     block = {
         'info':info,
@@ -544,7 +637,7 @@ def actionOfBook(info):
         # 'info':
         # 'type':'agree'
     # }
-    retjohn = Z.searchOnJohn({'token':info['info']['token']})
+    retjohn = J.searchOnJohn({'token':info['info']['token']})
     if retjohn['status'] != 'success':
         return retjohn
     if retjohn['right'] != 2:
@@ -557,8 +650,11 @@ def actionOfBook(info):
     elif info['type'] == 'agree':
         #获取订单中的bookid
         dborder = Z.searchOrder(orderid=info['info']['uuid'])
-        if dborder['status'] != 'success':
-            return dborder
+        if len(dborder['data']) == 0:
+            return {
+                'status':'failure',
+                'errorInfo':'System error in Order!Can not find this order!'
+            }
         bookid = dborder['data'][0]['bookid']
         #修改book状态
         dbinstance = Z.modifyBookInstance({'uuid':bookid,'status':'--b-'})
@@ -576,15 +672,23 @@ def actionOfBook(info):
         dbinstance = Z.modifyBookInstance({'uuid':bookid,'optid':dboper['uuid']})
         if dbinstance['status'] != 'success':
             return dbinstance
+        #在订单中添加操作表
+        dborder = Z.modifyOrderOptid({'uuid':info['info']['uuid'],'optid':dboper['uuid']})
+        if dborder['status'] != 'success':
+            return dborder
         #修改订单状态
         dborder = Z.modifyOrderStatus({'uuid':info['info']['uuid'],'status':'-b---'})
     elif info['type'] == 'return':
         #获取订单中的userid,bookid
         dborder = Z.searchOrder(orderid=info['info']['uuid'])
-        if dborder['status'] != 'success':
-            return dborder
+        if len(dborder['data']) == 0:
+            return {
+                'status':'failure',
+                'errorInfo':'System error in Order!Can not find this order!'
+            }
         userid = dborder['data'][0]['userid']
         bookid = dborder['data'][0]['bookid']
+        optid = dborder['data'][0]['optid']
         #修改book状态
         dbinstance = Z.modifyBookInstance({'uuid':bookid,'status':'a---'})
         if dbinstance['status'] != 'success':
@@ -592,11 +696,18 @@ def actionOfBook(info):
         dbinstance = Z.modifyBookInstance({'uuid':bookid,'optid':None})
         if dbinstance['status'] != 'success':
             return dbinstance
+        #修改bookopt状态
+        dboper = Z.modifyOperationDate({'uuid':optid,'date':[str(datetime.datetime.now())]})
+        if dboper['status'] != 'success':
+            return dboper
+        dboper = Z.modifyOperationStatus({'uuid':optid,'status':'---r'})
+        if dboper['status'] != 'success':
+            return dboper
         #修改最新余额
         dbuser = Z.modifyUserBalance({'uuid':userid,'balance':info['info']['balance']})
         if dbuser['status'] != 'success':
             return dbuser
-        dborder = Z.modifyOrderStatus({'uuid':info['uuid'],'status':'--f--'})
+        dborder = Z.modifyOrderStatus({'uuid':info['info']['uuid'],'status':'--f--'})
     else:
         return {
             'status':'failure',
@@ -611,6 +722,7 @@ def actionOfBook(info):
     }
     return retinfo
 
+# finish
 def checkBorrow(info):
     block = {
         'info':info,
@@ -618,6 +730,7 @@ def checkBorrow(info):
     }
     return checkAction(block)
     
+#finish
 def checkReturn(info):
     block = {
         'info':info,
@@ -625,14 +738,14 @@ def checkReturn(info):
     }
     return checkAction(block)
   
-  
+# finish 
 def checkAction(info):
     # info : {
         # 'info':
         # 'type':'borrow'
     # }
     #身份核实
-    retjohn = Z.searchOnJohn({'token':info['info']['token']})
+    retjohn = J.searchOnJohn({'token':info['info']['token']})
     if retjohn['status'] != 'success':
         return retjohn
     if retjohn['right'] != 2:
@@ -646,14 +759,15 @@ def checkAction(info):
     if dbuser['status'] != 'success':
         return dbuser
     #订单查询
+    orderList = []
     if info['type'] == 'borrow':
-        dborder = orderList({'userid':dbuser['uuid'],'right':'1','status':'a----'})
+        dborder = getOrderList({'userid':dbuser['uuid'],'right':1,'status':'a----'})
         if dborder['status'] != 'success':
             orderList = []
         else:
             orderList = dborder['orderList']
     elif info['type'] == 'return':  
-        dborder = orderList({'userid':dbuser['uuid'],'right':'1','status':'-b---'})
+        dborder = getOrderList({'userid':dbuser['uuid'],'right':1,'status':'-b---'})
         if dborder['status'] != 'success':
             orderlistB = []
         else:
@@ -661,24 +775,25 @@ def checkAction(info):
             for i in orderlistB:
                 i.pop('timeLeft')
                 i['fine'] = 0
-                delta = (datetime.datetime.now() - datetime.datetime.strptime(i['borrowDate'],'%Y-%m-%d %H:%M:%S.%f'))
+                delta = (datetime.datetime.now() - datetime.datetime.strptime(i['borrowDate'],'%Y-%m-%d'))
                 i['days'] = delta.days
-        dborder = orderList({'userid':dbuser['uuid'],'right':'1','status':'---o-'})
+        orderList.extend(orderlistB)
+        dborder = getOrderList({'userid':dbuser['uuid'],'right':1,'status':'---o-'})
         if dborder['status'] != 'success':
             orderlistO = []
         else:
             orderlistO = dborder['orderList']
             for i in orderlistO:
                 i.pop('overDays')
-                delta = datetime.datetime.now() - datetime.datetime.strptime(i['borrowDate'],'%Y-%m-%d %H:%M:%S.%f')
+                delta = datetime.datetime.now() - datetime.datetime.strptime(i['borrowDate'],'%Y-%m-%d')
                 i['days'] = delta.days
                 deltaF = delta - datetime.timedelta(days=30)
                 i['fine'] = deltaF.days * 1
-        orderList = orderlistB.extend(orderlistO)
+        orderList.extend(orderlistO)
     target = []
     for one in orderList:
-        if one['bookid'] in info['info']['uuids']
-        target.append(one)
+        if one['bookid'] in info['info']['uuids']:
+            target.append(one)
      
     retinfo = {
         "status":"success",
@@ -688,8 +803,9 @@ def checkAction(info):
         }
     }
     return retinfo
-    
-def orderList(info):
+
+# finish   
+def getOrderList(info):
     # info :{
         # 'userid':
         # 'right':
@@ -700,7 +816,7 @@ def orderList(info):
         dborder = Z.searchOrder(userid=info['userid'],status=info['status'])
     else:
         dborder = Z.searchOrder(status=info['status'])
-    orderids = []
+    orders = []
     orderlist = []
     for one in dborder['data']:
         orders.append(one['orderid'])
@@ -714,7 +830,7 @@ def orderList(info):
             orderinfo = {
                 #_orderinfo[""]
                 "orderid": _orderinfo["orderid"],
-                "applyDate": _orderinfo["initdate"],
+                "applyDate": _orderinfo["initdate"].split(' ')[0],
                 "ISBN": _orderinfo["isbn"],
                 "bookName": _orderinfo["bookname"],
                 "image": _orderinfo["image"],
@@ -727,25 +843,28 @@ def orderList(info):
                 "balance": _orderinfo["balance"]
             }
             if info['status'] == 'a----':
-                orderinfo['applyTime'] = _orderinfo["initdate"].split(' ')[1]
+                orderinfo['applyTime'] = _orderinfo["initdate"].split(' ')[1].split('.')[0]
             elif info['status'] == '-b---':
-                orderinfo['borrowDate'] = _orderinfo["initdate"]
+                orderinfo['borrowDate'] = _orderinfo["initdate"].split(' ')[0]
                 b = datetime.datetime.strptime(_orderinfo["initdate"],'%Y-%m-%d %H:%M:%S.%f')
                 limit = datetime.timedelta(days=30)
                 delta = b + limit - datetime.datetime.now()
                 orderinfo['timeLeft'] = delta.days
             elif info['status'] == '---o-':
-                orderinfo['borrowDate'] = _orderinfo["initdate"]
+                orderinfo['borrowDate'] = _orderinfo["initdate"].split(' ')[0]
                 b = datetime.datetime.strptime(_orderinfo["initdate"],'%Y-%m-%d %H:%M:%S.%f')
                 limit = datetime.timedelta(days=30)
                 delta = datetime.datetime.now() - b - limit 
                 orderinfo['overDays'] = delta.days
                 orderinfo['fine'] = delta.days * 1
             elif info['status'] == '--f--':
-                pass
-                #here
+                orderinfo['returnDate'] = _orderinfo["bookoperdate"]
+                a = datetime.datetime.strptime(_orderinfo["initdate"],'%Y-%m-%d %H:%M:%S.%f')
+                b = datetime.datetime.strptime(_orderinfo["bookoperdate"],'%Y-%m-%d %H:%M:%S.%f')
+                delta = b - a
+                orderinfo['holdDays'] = delta.days
             elif info['status'] == '----i':
-                orderinfo['invalidDate'] = _orderinfo["initdate"]
+                orderinfo['invalidDate'] = _orderinfo["initdate"].split(' ')[0]
             else:
                 pass
             orderlist.append(orderinfo)
@@ -755,8 +874,9 @@ def orderList(info):
     }
     return retinfo
 
+# finish
 def applyList(info):
-    retjohn = Z.searchOnJohn({'token':info['info']['token']})
+    retjohn = J.searchOnJohn({'token':info['token']})
     if retjohn['status'] != 'success':
         return retjohn
     block = {
@@ -764,25 +884,13 @@ def applyList(info):
         'right':retjohn['right'],
         'status':'a----'
     }
-    retinfo = orderList(block)
+    retinfo = getOrderList(block)
     retinfo['tokendate'] = retjohn['tokenDate']
     return retinfo
-    
-def returnList(info):
-    retjohn = Z.searchOnJohn({'token':info['info']['token']})
-    if retjohn['status'] != 'success':
-        return retjohn
-    block = {
-        'userid':retjohn['uuid'],
-        'right':retjohn['right'],
-        'status':'a----'
-    }
-    retinfo = orderList(block)
-    retinfo['tokendate'] = retjohn['tokenDate']
-    return retinfo
-    
+
+# finish    
 def borrowList(info):
-    retjohn = Z.searchOnJohn({'token':info['info']['token']})
+    retjohn = J.searchOnJohn({'token':info['info']['token']})
     if retjohn['status'] != 'success':
         return retjohn
     block = {
@@ -790,12 +898,13 @@ def borrowList(info):
         'right':retjohn['right'],
         'status':'-b---'
     }
-    retinfo = orderList(block)
+    retinfo = getOrderList(block)
     retinfo['tokendate'] = retjohn['tokenDate']
     return retinfo
-    
+
+# finish   
 def overdueList(info):
-    retjohn = Z.searchOnJohn({'token':info['info']['token']})
+    retjohn = J.searchOnJohn({'token':info['token']})
     if retjohn['status'] != 'success':
         return retjohn
     block = {
@@ -803,12 +912,13 @@ def overdueList(info):
         'right':retjohn['right'],
         'status':'---o-'
     }
-    retinfo = orderList(block)
+    retinfo = getOrderList(block)
     retinfo['tokendate'] = retjohn['tokenDate']
     return retinfo
-    
+
+# finish    
 def finishedList(info):
-    retjohn = Z.searchOnJohn({'token':info['info']['token']})
+    retjohn = J.searchOnJohn({'token':info['token']})
     if retjohn['status'] != 'success':
         return retjohn
     block = {
@@ -816,12 +926,13 @@ def finishedList(info):
         'right':retjohn['right'],
         'status':'--f--'
     }
-    retinfo = orderList(block)
+    retinfo = getOrderList(block)
     retinfo['tokendate'] = retjohn['tokenDate']
     return retinfo
 
+# finish
 def invalidList(info):
-    retjohn = Z.searchOnJohn({'token':info['info']['token']})
+    retjohn = J.searchOnJohn({'token':info['token']})
     if retjohn['status'] != 'success':
         return retjohn
     block = {
@@ -829,37 +940,44 @@ def invalidList(info):
         'right':retjohn['right'],
         'status':'----i'
     }
-    retinfo = orderList(block)
+    retinfo = getOrderList(block)
     retinfo['tokendate'] = retjohn['tokenDate']
     return retinfo
     
 def searchOrderInfo(orderid):
     dborder = Z.searchOrder(orderid=orderid)
-    if dborder['status'] != 'success':
-        return dborder
+    if len(dborder['data']) == 0:
+        return {
+            'status':'failure',
+            'errorInfo':'System error in Order!Can not find this order!'
+        }
     orderinfo = dborder['data'][0]
-    orderdate = orderinfo['timestamp']
+    orderdate = str(orderinfo['timestamp'])
+    bookid = orderinfo['bookid']
+    optid = orderinfo['optid']
+    userid = orderinfo['userid']
+    orderstatus = orderinfo['status']
+    # print orderinfo
     # need calculation to modify order status
     now = str(datetime.datetime.now())
     result = tools.getMinus(now,orderdate)
     if orderinfo['status'] == 'a----':
         if result.seconds > 1800:
             orderstatus = '----i'
-        orderstatus = orderinfo['status']
+            Z.modifyOrderStatus({'uuid':orderid,'status':orderstatus})
     if orderinfo['status'] == '-b---':
         if result.days > 30:
-            orderstatus = '--o--'
-        orderstatus = orderinfo['status']
-    bookid = orderinfo['bookid']
-    userid = orderinfo['userid']
-    dboper = Z.searchOperation(optid)
-    if dboper['status'] != 'success':
-        return dboper
+            orderstatus = '---o-'
+            Z.modifyOrderStatus({'uuid':orderid,'status':orderstatus})
+    dboper = {'date':''}
+    if optid != None:
+        dboper = Z.searchOperation(optid)
+        if dboper['status'] != 'success':
+            dboper['date'] = ''
     dbinstance = Z.searchBookInstance(uuid=bookid)
     if dbinstance['status'] != 'success':
         return dbinstance
     isbn = dbinstance['data']['isbn']
-    optid = dbinstance['data']['uuids'][0]['optid']
     bookstatus = dbinstance['data']['uuids'][0]['status']
     dbuser = Z.getUserInfo(userid)
     if dbuser['status'] != 'success':
@@ -876,7 +994,7 @@ def searchOrderInfo(orderid):
         copys.append({'uuid':book['uuid'],'status':book['status']})
     retinfo = {
         'status':'success',
-        'orderid':info['uuid'],
+        'orderid':orderid,
         'initdate':orderdate,
         'orderstatus':orderstatus,
         'userid':userid,
@@ -898,7 +1016,7 @@ def searchOrderInfo(orderid):
         'amount':len(copys),
         'copys':copys,
         'userid':userid,
-        'userName':dbuser['data']['usename'],
+        'userName':dbuser['data']['username'],
         'balance':dbuser['data']['balance']
     }
     return retinfo
@@ -907,7 +1025,10 @@ def getBookInfo(isbn):
     dbkind = Z.searchBookInfo(isbn)
     if dbkind['status'] != 'success':
         return dbkind
-    position = tools.divideLocation(Z.searchLocation(dbkind['data']['lc']))
+    dblocation = Z.searchLocation(dbkind['data']['lc'])
+    if dblocation['status'] != 'success':
+        return dblocation
+    position = tools.divideLocation(dblocation['location'])
     tag = tools.divideTags(dbkind['data']['tags'])
     dbkind['data']['position'] = position
     dbkind['data']['language'] = tag['language']
