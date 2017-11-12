@@ -1,0 +1,701 @@
+{
+    "login":{
+        "request":{
+            "type":"usertype -> fe(userType)",
+            "value":"userkey -> fe(userkey)",
+            "password":"password -> fe(password)"
+        },
+        "response of success":{
+            "status":"success",
+            "token":"token",
+            "tokendate":"tokendate",
+            "usertype":"usertype",
+            "username":"username",
+            "data":{
+                "image":"image -> logo in db"
+            }
+        },
+        "response of failure":{
+            "status":"failure",
+            "errorInfo":"errorInfo -> system error or other"
+        }
+    },
+    "logout":{
+        "request":{
+            "token":"token -> fe(token)"
+        },
+        "response of success":{
+            "status":"success"
+        },
+        "response of failure":{
+            "status":"failure",
+            "errorInfo":"errorInfo -> system error or other"
+        }
+    },
+    "searchBook":{
+        "request":{
+            "token":"token -> fe(token)",
+            "type":"searchtype -> fe(searchType)",
+            "value":"searchvalue -> fe(searchValue)"
+        },
+        "response of success":{
+            "status":"success",
+            "tokendate":"tokendate",
+            "data":{
+                "bookList":[{
+                    "name":"name",
+                    "ISBN":"isbn",
+                    "auth":["auth name"],
+                    "position": {
+                        "room": "",
+                        "shelf": ""
+                    },
+                    "language": [""],
+                    "theme": [""],
+                    "amount": 1,
+                    "image": ""
+                }],
+                "filter":{
+                    "language": ["",""],
+                    "room": [""],
+                    "theme": ["", ""]
+                }
+            }
+        },
+        "response of failure":{
+            "status":"failure",
+            "errorInfo":"errorInfo -> system error or other"
+        }
+    },
+    "searchBookInfo":{
+        "request":{
+            "token":"token -> fe(token)",
+            "ISBN":"ISBN -> fe(ISBN)"
+        },
+        "response of success":{
+            "status":"success",
+            "tokendate":"tokendate",
+            "data":{
+                "bookInfo":{
+                    "name":"name",
+                    "ISBN":"isbn",
+                    "auth":["auth name"],
+                    "version": ["v1"],
+                    "publisher": "",
+                    "CLC": "",
+                    "description": "this is desc",
+                    "position": {
+                        "room": "",
+                        "shelf": ""
+                    },
+                    "language": [""],
+                    "theme": [""],
+                    "amount": 1,
+                    "image": "",
+                    "copys": [{
+                        "uuid": "111111",
+                        "status": "Available"
+                        },{
+                        "uuid": "222222",
+                        "status": "Borrowed"
+                    }]
+                }
+            }
+        },
+        "response of failure":{
+            "status":"failure",
+            "errorInfo":"errorInfo -> system error or other"
+        }
+    },
+    "getImage":{
+        "request":{
+            "imgroute":"route -> fe(url)"
+        },
+        "response":{
+            "data":{
+                "binarydata":"",
+                "MIME":""
+            }
+        }
+    },
+    "editUserImg":{
+        "request":{
+            "token":"token -> fe(token)",
+            "logo":"uuid of new image"
+        },
+        "response of success":{
+            "status":"success",
+            "tokendate":"tokendate"
+        },
+        "response of failure":{
+            "status":"failure",
+            "errorInfo":"errorInfo -> system error or other"
+        }
+    },
+    "searchUserInfo":{
+        "request":{
+            "token":"token -> fe(token)"
+        },
+        "response of success":{
+            "status":"success",
+            "tokendate":"tokendate",
+            "data":{
+                "userInfo":{
+                    "userName": "",
+                    "uuid": "",
+                    "studentID": "",
+                    "tel": "",
+                    "balance": 300,
+                    "userImage": "",
+                    "orderNumber": "",
+                    "fine": 100
+                }
+            }
+        },
+        "response of failure":{
+            "status":"failure",
+            "errorInfo":"errorInfo -> system error or other"
+        }
+    },
+    "searchUserInfoAdmin":{
+        "request":{
+            "token":"token -> fe(token)",
+            "stuid":"studentID -> fe(studentID)"
+        },
+        "response of success":{
+            "status":"success",
+            "tokendate":"",
+            "data":{
+                "userInfo":{
+                    "userName": "",
+                    "uuid": "",
+                    "studentID": "",
+                    "tel": "",
+                    "balance": 300,
+                    "userImage": ""
+                }
+            }
+        },
+        "response of failure":{
+            "status":"failure",
+            "errorInfo":"errorInfo -> system error or other"
+        }
+    },
+    "signup":{
+        "request":{
+            "token":"token -> fe(token)",
+            "newUser":{
+                "username": "userName",
+                "studentid": "",
+                "balance": "",
+                "deposit": 300,
+                "password": "password",
+                "tel": "tel"
+            }
+        },
+        "response of success":{
+            "status":"success",
+            "tokendate":""
+        },
+        "response of failure":{
+            "status":"failure",
+            "errorInfo":"errorInfo -> system error or other"
+        }
+    },
+    "editUserInfo":{
+        "request":{
+            "token":"token -> fe(token)",
+            "balance": "",
+            "password": "password",
+            "uuid": ""
+        },
+        "response of success":{
+            "status":"success",
+            "tokendate":""
+        },
+        "response of failure":{
+            "status":"failure",
+            "errorInfo":"errorInfo -> system error or other"
+        }
+    },
+    "recommend":{
+        "request":{
+            "token":"token -> fe(token)"
+        },
+        "response of success":{
+            "status":"success",
+            "tokendate":"",
+            "data":{
+                "bookList":[{
+                    "name": "name",
+                    "ISBN": "isbn1",
+                    "description": "",
+                    "image": ""
+                }]
+            }
+        },
+        "response of failure":{
+            "status":"failure",
+            "errorInfo":"errorInfo -> system error or other"
+        }
+    },
+    "searchBookOnThird":{
+        "request":{
+            "token":"token -> fe(token)",
+            "ISBN":"ISBN -> fe(ISBN)"
+        },
+        "response of success":{
+            "status":"success",
+            "tokendate":"",
+            "data":{
+                "bookInfo":{
+                    "name": "preview1",
+                    "auth": ["preview1","preview2"],
+                    "version": ["1", "2"],
+                    "publisher": "",
+                    "CLC": "",
+                    "language": ["english"],
+                    "theme": ["a"],
+                    "image": "/res/image/test3.gif",
+                    "description": "aaaaaaaa"
+                }
+            }
+        },
+        "response of failure":{
+            "status":"failure",
+            "errorInfo":"errorInfo -> system error or other"
+        }
+    },
+    "addBook":{
+        "request":{
+            "token":"token -> fe(token)",
+            "bookInfo":{
+                "name": "",
+                "auth": ["", ""],
+                "ISBN": "",
+                "publisher": "",
+                "CLC": "",
+                "version": "",
+                "description": "",
+                "language": [""],
+                "theme": [""],
+                "amount": "",
+                "image": ""
+            }
+        },
+        "response of success":{
+            "status":"success",
+            "tokendate":"",
+            "data": {
+                "bookInfo": {
+                    "name": "bookinfo",
+                    "auth": ["bookinfo1"],
+                    "version": ["v1"],
+                    "ISBN": "bookinfo1",
+                    "publisher": "",
+                    "language": ["chiness",""],
+                    "position": ["101", "2"],
+                    "theme": [""],
+                    "CLC": "",
+                    "amount": "3",
+                    "image": "",
+                    "description": "this is desc",
+                    "copys": [{
+                            "uuid": "111111",
+                            "status": "available"
+                        },{
+                            "uuid": "222222",
+                            "status": "borrowed"
+                        }
+                    ]
+                }
+            }
+        },
+        "response of failure":{
+            "status":"failure",
+            "errorInfo":"errorInfo -> system error or other"
+        }
+    },
+    "addBookCopy":{
+        "request":{
+            "token":"token -> fe(token)",
+            "ISBN":"ISBN -> fe(ISBN)"
+        },
+        "response of success":{
+            "status":"success",
+            "tokendate":"",
+            "data":{
+                "uuid":""
+            }
+        },
+        "response of failure":{
+            "status":"failure",
+            "errorInfo":"errorInfo -> system error or other"
+        }
+    },
+    "deleteBookCopy":{
+        "request":{
+            "token":"token -> fe(token)",
+            "uuid":""
+        },
+        "response of success":{
+            "status":"success",
+            "tokendate":""
+        },
+        "response of failure":{
+            "status":"failure",
+            "errorInfo":"errorInfo -> system error or other"
+        }
+    },
+    "editBookCopy":{
+        "request":{
+            "token":"token -> fe(token)",
+            "uuid":"uuid -> fe(uuid)",
+            "status":"status -> fe(status)"
+        },
+        "response of success":{
+            "status":"success",
+            "tokendate":""
+        },
+        "response of failure":{
+            "status":"failure",
+            "errorInfo":"errorInfo -> system error or other"
+        }
+    },
+    "editUserImage":{
+        "request":{
+            "token":"token -> fe(token)",
+            "imgdata":"data -> fe(image)",
+            "imgtype":"type -> fe(type)"
+        },
+        "response of success":{
+            "status":"success",
+            "tokendate":""
+        },
+        "response of failure":{
+            "status":"failure",
+            "errorInfo":"errorInfo -> system error or other"
+        }
+    },
+    "searchHistory":{
+        "request":{
+            "token":"token -> fe(token)"
+        },
+        "response of success":{
+            "status":"success",
+            "tokendate":"",
+            "data": {
+                "bookList":[{
+                    "name": "apply1",
+                    "ISBN": "apply1",
+                    "position": {
+                        "room": "",
+                        "shelf": ""
+                    },
+                    "theme": [""],
+                    "language": [""],
+                    "image": ""
+                }]
+            }
+        },
+        "response of failure":{
+            "status":"failure",
+            "errorInfo":"errorInfo -> system error or other"
+        }
+    },
+    "apply":{
+        "request":{
+            "token":"token -> fe(token)",
+            "uuid":"uuid -> fe(uuid)"
+        },
+        "response of success":{
+            "status":"success",
+            "tokendate":""
+        },
+        "response of failure":{
+            "status":"failure",
+            "errorInfo":"errorInfo -> system error or other"
+        }
+    },
+    "agreeBorrow":{
+        "request":{
+            "token":"token -> fe(token)",
+            "uuid":"uuid -> fe(uuid)"
+        },
+        "response of success":{
+            "status":"success",
+            "tokendate":""
+        },
+        "response of failure":{
+            "status":"failure",
+            "errorInfo":"errorInfo -> system error or other"
+        }
+    },
+    "refuseBorrow":{
+        "request":{
+            "token":"token -> fe(token)",
+            "uuid":"uuid -> fe(uuid)"
+        },
+        "response of success":{
+            "status":"success",
+            "tokendate":""
+        },
+        "response of failure":{
+            "status":"failure",
+            "errorInfo":"errorInfo -> system error or other"
+        }
+    },
+    "return":{
+        "request":{
+            "token":"token -> fe(token)",
+            "uuid":"uuid -> fe(uuid)",
+            "balance":"balance -> fe(newBalance)"
+        },
+        "response of success":{
+            "status":"success",
+            "tokendate":""
+        },
+        "response of failure":{
+            "status":"failure",
+            "errorInfo":"errorInfo -> system error or other"
+        }
+    },
+    "checkBorrow":{
+        "request":{
+            "token":"token -> fe(token)",
+            "studentID":"",
+            "uuids":[""]
+        },
+        "response of success":{
+            "status":"success",
+            "tokendate":"",
+            "data": {
+                "orderList":[{
+                    "orderid": "",
+                    "applyDate": "",
+                    "ISBN": "",
+                    "bookName": "",
+                    "image": "",
+                    "auth": [""],
+                    "position": {
+                        "room": "",
+                        "shelf": ""
+                    },
+                    "amount": "",
+                    "userid": "",
+                    "userName": "",
+                    "balance": 250
+                }]
+            }
+        },
+        "response of failure":{
+            "status":"failure",
+            "errorInfo":"errorInfo -> system error or other"
+        }
+    },
+    "checkReturn":{
+        "request":{
+            "token":"token -> fe(token)",
+            "studentID":"",
+            "uuids":[""]
+        },
+        "response of success":{
+            "status":"success",
+            "tokendate":"",
+            "data": {
+                "orderList":[{
+                    "orderid": "",
+                    "applyDate": "",
+                    "fine": 250,
+                    "days": 31,
+                    "borrowDate":"",
+                    "ISBN": "",
+                    "bookName": "",
+                    "image": "",
+                    "auth": [""],
+                    "position": {
+                        "room": "",
+                        "shelf": ""
+                    },
+                    "amount": "",
+                    "userid": "",
+                    "userName": "",
+                    "balance": 250
+                }]
+            }
+        },
+        "response of failure":{
+            "status":"failure",
+            "errorInfo":"errorInfo -> system error or other"
+        }
+    },
+    "applyList":{
+        "request":{
+            "token":"token -> fe(token)"
+        },
+        "response of success":{
+            "status":"success",
+            "tokendate":"",
+            "data": {
+                "orderList":[{
+                    "orderid": "",
+                    "applyDate": "",
+                    "applyTime":"",
+                    "ISBN": "",
+                    "bookName": "",
+                    "image": "",
+                    "auth": [""],
+                    "position": {
+                        "room": "",
+                        "shelf": ""
+                    },
+                    "bookid":"",
+                    "amount": "",
+                    "userid": "",
+                    "userName": "",
+                    "balance": 250
+                }]
+            }
+        },
+        "response of failure":{
+            "status":"failure",
+            "errorInfo":"errorInfo -> system error or other"
+        }
+    },
+    "returnList":{
+        "request":{
+            "token":"token -> fe(token)"
+        },
+        "response of success":{
+            "status":"success",
+            "tokendate":"",
+            "data": {
+                "orderList":[{
+                    "orderid": "",
+                    "applyDate": "",
+                    "ISBN": "",
+                    "returnDate":"",
+                    "holdDays":"",
+                    "bookName": "",
+                    "image": "",
+                    "auth": [""],
+                    "position": {
+                        "room": "",
+                        "shelf": ""
+                    },
+                    "bookid":"",
+                    "amount": "",
+                    "userid": "",
+                    "userName": "",
+                    "balance": 250
+                }]
+            }
+        },
+        "response of failure":{
+            "status":"failure",
+            "errorInfo":"errorInfo -> system error or other"
+        }
+    },
+    "borrowList":{
+        "request":{
+            "token":"token -> fe(token)"
+        },
+        "response of success":{
+            "status":"success",
+            "tokendate":"",
+            "data": {
+                "orderList":[{
+                    "orderid": "",
+                    "applyDate": "",
+                    "ISBN": "",
+                    "borrowDate":"",
+                    "timeLeft":"",
+                    "bookName": "",
+                    "image": "",
+                    "auth": [""],
+                    "position": {
+                        "room": "",
+                        "shelf": ""
+                    },
+                    "bookid":"",
+                    "amount": "",
+                    "userid": "",
+                    "userName": "",
+                    "balance": 250
+                }]
+            }
+        },
+        "response of failure":{
+            "status":"failure",
+            "errorInfo":"errorInfo -> system error or other"
+        }
+    },
+    "overdueList":{
+        "request":{
+            "token":"token -> fe(token)"
+        },
+        "response of success":{
+            "status":"success",
+            "tokendate":"",
+            "data": {
+                "orderList":[{
+                    "orderid": "",
+                    "applyDate": "",
+                    "ISBN": "",
+                    "borrowDate":"",
+                    "overDays":"",
+                    "fine":"",
+                    "bookName": "",
+                    "image": "",
+                    "auth": [""],
+                    "position": {
+                        "room": "",
+                        "shelf": ""
+                    },
+                    "bookid":"",
+                    "amount": "",
+                    "userid": "",
+                    "userName": "",
+                    "balance": 250
+                }]
+            }
+        },
+        "response of failure":{
+            "status":"failure",
+            "errorInfo":"errorInfo -> system error or other"
+        }
+    },
+    "invalidList":{
+        "request":{
+            "token":"token -> fe(token)"
+        },
+        "response of success":{
+            "status":"success",
+            "tokendate":"",
+            "data": {
+                "orderList":[{
+                    "orderid": "",
+                    "applyDate": "",
+                    "ISBN": "",
+                    "bookName": "",
+                    "invaildDate":"",
+                    "image": "",
+                    "auth": [""],
+                    "position": {
+                        "room": "",
+                        "shelf": ""
+                    },
+                    "bookid":"",
+                    "amount": "",
+                    "userid": "",
+                    "userName": "",
+                    "balance": 250
+                }]
+            }
+        },
+        "response of failure":{
+            "status":"failure",
+            "errorInfo":"errorInfo -> system error or other"
+        }
+    }
+}

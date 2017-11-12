@@ -6,6 +6,7 @@ Created on 2017年11月1日
 '''
 from database import Database as Z
 import John as J
+import thirdISBN as third
 import tools
 import datetime
 
@@ -41,11 +42,11 @@ def login(info):
     retinfo = {
         'status':'success',
         'token' : retjohn['token'],
-        'tokendate' : retjohn['tokenDate'],    
+        'tokendate' : retjohn['tokenDate'],
         'data':{
             'username' : userinfo['username'],
-            'image' : userinfo['logo'],
-            'usertype' : usertype
+            'usertype' : usertype,
+            'image' : userinfo['logo']
         }
     }
     return retinfo
@@ -65,12 +66,21 @@ def searchBook(info):
             return retjohn
         tokendate = retjohn['tokenDate']
     #获取ISBN
-    retdb = Z.searchISBN({'type':info['type'],'value':info['value']})
-    if retdb['status'] != 'success':
-        # if tokendate != '':
-            # retdb['tokendate'] = tokendate
-        return retdb
-    isbns = retdb['isbn']
+    if info['type'] == 'bookName':
+        info['type'] = 'name'
+    elif info['type'] == 'theme':
+        info['type'] = 'tags'
+    elif info['type'] == 'authorName':
+        info['type'] = 'auth'
+    else:
+        pass
+    if info['type'] == 'ISBN':
+        isbns = [info['value']]
+    else:
+        retdb = Z.searchISBN({'type':info['type'],'value':info['value']})
+        if retdb['status'] != 'success':
+            return retdb
+        isbns = retdb['isbn']
     booklist,languages,rooms,themes = [],[],[],[]
     for isbn in isbns:
         #根据isbn获取书籍基本信息
@@ -142,7 +152,7 @@ def searchBookByISBN(info):
     bookinfo = {
         'name':dbkind['data']['name'],
         'auth':dbkind['data']['auth'],
-        'version':dbkind['data']['edition'],
+        'version':[dbkind['data']['edition']],
         'ISBN':dbkind['data']['isbn'],
         'publisher':dbkind['data']['publisher'],
         'CLC':dbkind['data']['lc'],
@@ -199,7 +209,26 @@ def getImage(route):
             'binarydata':'',
             'MIME':''
         }
-    }   
+    }
+
+def editUserImg(info):
+    #在线状态查询
+    retjohn = J.searchOnJohn({'token':info['token']})
+    if retjohn['status'] != 'success':
+        return retjohn
+    #核实身份
+    if retjohn['right'] == 2:
+        return {
+            'status':'failure',
+            'errorInfo':'Admin do not have Logo!'
+        }
+    dbuser = Z.modifyLogo({'uuid':retjohn['uuid'],'logo':info['logo']})
+    if dbuser['status'] != 'success':
+        return dbuser
+    return {
+        'status':'success',
+        'tokendate':retjohn['tokenDate']
+    }
 
 # finish
 def searchUserInfo(info):
@@ -211,8 +240,7 @@ def searchUserInfo(info):
     if retjohn['right'] == 2:
         return {
             'status':'failure',
-            'errorInfo':'Admin do not have a Info Page!',
-            'tokendate':retjohn['tokenDate']
+            'errorInfo':'Admin do not have a Info Page!'
         }
     #查询用户基本信息
     dbuser = Z.getUserInfo(retjohn['uuid'])
@@ -279,6 +307,42 @@ def recomends(info):
     }
     if tokendate != '':
         retinfo['tokendate'] = tokendate
+    return retinfo
+    
+def searchBookOnThird(info):
+    #身份核实
+    retjohn = J.searchOnJohn({'token':info['token']})
+    if retjohn['status'] != 'success':
+        return retjohn
+    if retjohn['right'] != 2:
+        return {
+            'status':'failure',
+            'errorInfo':'You don not have this right!'
+        }
+    dbthird = third.getBookInfo(info['ISBN'])
+    if dbthird['status'] != 'success':
+        return dbthird
+    # img
+    # img
+    img = ''
+    tag = tools.divideTags(dbthird['data']['tags'])
+    retinfo = {
+        'status':'success',
+        'tokendate':retjohn['tokenDate'],
+        'data':{
+            'bookInfo':{
+                "name": dbthird['data']['name'],
+                "auth": dbthird['data']['auth'],
+                "version": [dbthird['data']['edition']],
+                "publisher": dbthird['data']['publisher'],
+                "CLC": dbthird['data']['lc'],
+                "language": tag['language'],
+                "theme": tag['theme'],
+                "image": img,
+                "description": dbthird['data']['abstract']
+            }
+        }
+    }
     return retinfo
    
 # finish
@@ -445,7 +509,7 @@ def addBook(info):
     tags = []
     tags.extend(info['bookInfo']['language'])
     tags.extend(info['bookInfo']['theme'])
-    print tags,'in test'
+    # print tags,'in test'
     fordb = {
         'isbn' : info['bookInfo']['ISBN'],
         'lc' : info['bookInfo']['CLC'],

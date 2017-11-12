@@ -9,6 +9,7 @@ __author__ = 'Fitzeng'
 
 
 import datetime
+import psycopg2
 import uuid
 
 from database import Database as DB
@@ -507,12 +508,21 @@ def testSearchImage():
     print DB.searchImage('38e50d1e-c215-11e7-9fe3-186590dcbd6e')
     print '''\n\n'''
 
+def testPicture():
+    pic = open('user.png','rb').read()
+    info = {
+        'mime':'image/jpeg',
+        'data':psycopg2.Binary(pic)
+    }
+    print DB.addImage(info)
+    
 def main():
 
     DB.setConnDefalt()
-
+    # DB.setConn('127.0.0.1', '54321', 'purple', 'postgres', 'postgres')
+    # testPicture()
     # DB.createTable()
-    DB.generateTestData()
+    # DB.generateTestData()
 
     # testAddUser()
     #

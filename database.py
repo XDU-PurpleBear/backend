@@ -21,7 +21,7 @@ class Database(object):
 
     @classmethod
     def setConnDefalt(cls):
-        _host, _port, _database, _user, _password = '127.0.0.1', '5432', 'purple', 'postgres', 'xxl'
+        _host, _port, _database, _user, _password = '127.0.0.1', '5432', 'postgres', 'postgres', 'xxl'
         cls.setConn(_host, _port, _database, _user, _password)
 
     @classmethod
@@ -65,7 +65,17 @@ class Database(object):
 
     @classmethod
     def modifyLogo(cls, info):
-        pass
+        # xu start
+        sql = 'UPDATE table_account SET ' \
+              'key_logo = ' + str(info['logo']) + ' WHERE key_uuid = \'' + info['uuid'] + '\';'
+        try:
+            cls.__cur.execute(sql)
+        except Exception, e:
+            return {'status': 'failure', 'errorInfo': str(e)}
+        finally:
+            cls.__conn.commit()
+        return {'status': 'success'}
+        # xu end
 
     @classmethod
     def modifyUserPWD(cls, info):
@@ -631,7 +641,9 @@ class Database(object):
     '''
     @classmethod
     def createTable(cls):
-        # cur = cls.__cur
+        cur = cls.__cur
+        # cur.execute('''DROP DATABASE IF EXISTS purple''')
+        # cur.execute('''CREATE DATABASE purple''')
         #
         # cur.execute('''DROP TABLE IF EXISTS table_account''')
         # cur.execute('''CREATE TABLE table_account
@@ -651,19 +663,19 @@ class Database(object):
         #                   , key_stu_id        BIGINT       UNIQUE NOT NULL CHECK(key_tel > 10000000000 AND key_tel < 20000000000)
         #                   ); ''')
         #
-        # cur.execute('''DROP TABLE IF EXISTS table_book_kind''')
-        # cur.execute('''CREATE TABLE table_book_kind
-        #                   ( key_isbn         VARCHAR(20) PRIMARY KEY
-        #                   , key_lc           VARCHAR(20)
-        #                   , key_name         TEXT
-        #                   , key_auth         TEXT[]
-        #                   , key_publisher    VARCHAR(64)
-        #                   , key_edition      INTEGER
-        #                   , key_publish_date DATE
-        #                   , key_imgs         UUID
-        #                   , key_tags         TEXT[]
-        #                   , key_abstract     TEXT
-        #                   ); ''')
+        cur.execute('''DROP TABLE IF EXISTS table_book_kind''')
+        cur.execute('''CREATE TABLE table_book_kind
+                          ( key_isbn         VARCHAR(20) PRIMARY KEY
+                          , key_lc           VARCHAR(20)
+                          , key_name         TEXT
+                          , key_auth         TEXT[]
+                          , key_publisher    VARCHAR(64)
+                          , key_edition      INTEGER
+                          , key_publish_date DATE
+                          , key_imgs         UUID
+                          , key_tags         TEXT[]
+                          , key_abstract     TEXT
+                          ); ''')
         #
         # cur.execute('''DROP TABLE IF EXISTS table_book_instance''')
         # cur.execute('''CREATE TABLE table_book_instance
@@ -710,6 +722,27 @@ class Database(object):
         #                   , key_time TIME NOT NULL
         #                   , PRIMARY KEY (key_book,key_user,key_time)
         #                   ); ''')
+        cur.execute('''DROP TABLE IF EXISTS table_upstream''')
+        cur.execute('''CREATE TABLE table_upstream
+                      ( isbn BIGINT PRIMARY KEY
+                      , lc TEXT
+                      , title TEXT
+                      , auths TEXT[]
+                      , publisher TEXT
+                      , edition Int
+                      , publish_date DATE
+                      , img_uuid UUID
+                      , tags TEXT[]
+                      , abstract TEXT
+                      )
+                      ;''')
+        cur.execute('''DROP TABLE IF EXISTS table_image''')
+        cur.execute('''CREATE TABLE table_image
+                    ( uuid UUID PRIMARY KEY
+                    , img BYTEA
+                    , mime TEXT
+                    )
+                    ;''')
 
         cls.__conn.commit()
 
